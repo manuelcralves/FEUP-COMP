@@ -59,57 +59,57 @@ program
     ;
 
 importDecl
-    : IMPORT names+=ID (DOT names+=ID)* SEMI
+    : IMPORT names+=ID (DOT names+=ID)* SEMI #Import
     ;
 
 classDecl
-    : CLASS className=ID (EXTEND extendName=ID)? LCURLY varDecl* methodDecl* RCURLY
+    : CLASS className=ID (EXTEND extendName=ID)? LCURLY varDecl* methodDecl* RCURLY #Class
     ;
 
 varDecl
-    : type name=ID SEMI
+    : typeName=type name=ID SEMI #Var
     ;
 
 type locals [boolean isArray = false]
-    : name=INT (LSQUARE RSQUARE {$isArray = true;})?
-    | name=INT DOTS
-    | name=BOOL
-    | name=INT
-    | name=STRING
-    | name=ID
+    : typeName=INT (LSQUARE RSQUARE {$isArray = true;})?
+    | typeName=INT DOTS
+    | typeName=BOOL
+    | typeName=INT
+    | typeName=STRING
+    | typeName=ID
     ;
 
 methodDecl locals [boolean isPublic=false]
-    : (PUBLIC {$isPublic=true;})? type name=ID LPAREN (type parameters+=ID ( COLON type parameters+=ID )* )? RPAREN LCURLY varDecl* stmt* RETURN expr SEMI RCURLY
-    | (PUBLIC {$isPublic=true;})? STATIC VOID MAIN LPAREN STRING LSQUARE RSQUARE args=ID RPAREN LCURLY varDecl* stmt* RCURLY
+    : (access=PUBLIC {$isPublic=true;})? type method=ID LPAREN (type parameters+=ID ( COLON type parameters+=ID )* )? RPAREN LCURLY varDecl* stmt* RETURN expr SEMI RCURLY #Method
+    | (access=PUBLIC {$isPublic=true;})? STATIC VOID method=MAIN LPAREN STRING LSQUARE RSQUARE args=ID RPAREN LCURLY varDecl* stmt* RCURLY #Main
     ;
 
 stmt
-    : LCURLY stmt* RCURLY
-    | IF LPAREN expr RPAREN stmt ELSE stmt 
-    | WHILE LPAREN expr RPAREN stmt 
-    | expr SEMI
-    | varName=ID EQUALS expr SEMI
-    | varName=ID LSQUARE expr RSQUARE EQUALS expr SEMI
+    : LCURLY stmt* RCURLY #Block
+    | IF LPAREN expr RPAREN stmt ELSE stmt #IfElse
+    | WHILE LPAREN expr RPAREN stmt #While
+    | expr SEMI #Expression
+    | varName=ID EQUALS expr SEMI #Assign
+    | varName=ID LSQUARE expr RSQUARE EQUALS expr SEMI #AssignArray
     ;
 
 expr
-    : LPAREN expr RPAREN
-    | expr LSQUARE expr RSQUARE
-    | LSQUARE (expr (COLON expr)*)? RSQUARE
-    | expr DOT LENGTH
-    | NOT expr
-    | NEW INT LSQUARE expr RSQUARE
-    | NEW ID LPAREN RPAREN
-    | expr op=(MUL|DIV) expr
-    | expr op=(ADD|SUB) expr
-    | expr op=(LT|LTE|MT|MTE) expr
-    | expr op=LOGICAND expr
-    | expr op=LOGICOR expr
-    | expr DOT caller=ID LPAREN ( expr ( COLON expr )* )? RPAREN
-    | var=INTEGER
-    | var=TRUE
-    | var=FALSE
-    | name = ID
-    | THIS
+    : LPAREN expr RPAREN #Parenthesis
+    | NOT expr #Not
+    | expr LSQUARE expr RSQUARE #Array
+    | expr DOT LENGTH #Length
+    | expr DOT caller=ID LPAREN ( expr ( COLON expr )* )? RPAREN #CallMethod
+    | LSQUARE (expr (COLON expr)*)? RSQUARE #NewArrayInt
+    | NEW INT LSQUARE expr RSQUARE #NewArrayInt
+    | NEW ID LPAREN RPAREN #NewObject
+    | expr op=(MUL|DIV) expr #BinaryOp
+    | expr op=(ADD|SUB) expr #BinaryOp
+    | expr op=(LT|LTE|MT|MTE) expr #BinaryOp
+    | expr op=LOGICAND expr #BinaryOp
+    | expr op=LOGICOR expr #BinaryOp
+    | var=INTEGER #Integer
+    | var=TRUE #Boolean
+    | var=FALSE #Boolean
+    | name = ID #Id
+    | THIS #This
     ;
