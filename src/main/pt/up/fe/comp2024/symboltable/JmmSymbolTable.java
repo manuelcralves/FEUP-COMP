@@ -57,9 +57,15 @@ public class JmmSymbolTable implements SymbolTable {
 
     @Override
     public Type getReturnType(String methodSignature) {
-        // TODO: Simple implementation that needs to be expanded
-        return new Type(TypeUtils.getIntTypeName(), false);
+        // Check if the return type for the method is available in the map
+        if (returnTypes.containsKey(methodSignature)) {
+            return returnTypes.get(methodSignature);
+        }
+        // Return null or a default type if the method signature is not found
+        // This behavior should be adjusted based on how you want to handle undefined methods
+        return null; // or throw new RuntimeException("Method signature not found: " + methodSignature);
     }
+
 
     @Override
     public List<Symbol> getParameters(String methodSignature) {
