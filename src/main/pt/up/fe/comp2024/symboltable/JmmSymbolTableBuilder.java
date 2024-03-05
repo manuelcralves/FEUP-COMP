@@ -21,20 +21,24 @@ public class JmmSymbolTableBuilder {
         var classDecl = root.getJmmChild(0);
         SpecsCheck.checkArgument(Kind.CLASS_DECL.check(classDecl), () -> "Expected a class declaration: " + classDecl);
         String className = classDecl.get("name");
+        String superClass = classDecl.getOptional("extends").orElse(null);
+
+        List<String> imports = buildImports(root);
 
         var methods = buildMethods(classDecl);
         var returnTypes = buildReturnTypes(classDecl);
         var params = buildParams(classDecl);
         var locals = buildLocals(classDecl);
+        var fields = buildFields(classDecl);
 
-        return new JmmSymbolTable(className, methods, returnTypes, params, locals);
+        return new JmmSymbolTable(className, methods, returnTypes, params, locals, imports, superClass, fields);
     }
 
 private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
     Map<String, Type> map = new HashMap<>();
 
     classDecl.getChildren(METHOD_DECL).forEach(method -> {
-        var returnTypeNode = method.getJmmChild(0); // Adjust child index based on your AST structure
+        var returnTypeNode = method.getJmmChild(0);
         String typeName = returnTypeNode.get("type");
         boolean isArray = returnTypeNode.getOptional("isArray").orElse("false").equals("true");
         map.put(method.get("name"), new Type(typeName, isArray));
@@ -48,7 +52,7 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
         Map<String, List<Symbol>> map = new HashMap<>();
 
         classDecl.getChildren(METHOD_DECL).forEach(method -> {
-            List<Symbol> paramsList = method.getChildren("Param").stream() // Assuming "Param" is the kind for parameter nodes
+            List<Symbol> paramsList = method.getChildren("Param").stream()
                     .map(paramNode -> {
                         String typeName = paramNode.get("type");
                         boolean isArray = paramNode.getOptional("isArray").orElse("false").equals("true");
@@ -100,6 +104,20 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
                     String varName = varDecl.get("name");
                     return new Symbol(varType, varName);
                 })
+                .collect(Collectors.toList());
+    }
+
+    private static List<String> buildImports(JmmNode root) {
+        return root.getChildren(Kind.IMPORT_DECL).stream()
+                .map(importNode -> String.join(".", importNode.get("names")))
+                .collect(Collectors.toList());
+    }
+
+    private static List<Symbol> buildFields(JmmNode classDecl) {
+        return classDecl.getChildren(Kind.VAR_DECL).stream()
+                .map(varDeclNode -> new Symbol(
+                        new Type(varDeclNode.get("type"), Boolean.parseBoolean(varDeclNode.getOptional("isArray").orElse("false"))),
+                        varDeclNode.get("name")))
                 .collect(Collectors.toList());
     }
 
