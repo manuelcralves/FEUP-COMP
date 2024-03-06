@@ -48,23 +48,21 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
 
 
     private static Map<String, List<Symbol>> buildParams(JmmNode classDecl) {
-        /*Map<String, List<Symbol>> map = new HashMap<>();
+        Map<String, List<Symbol>> map = new HashMap<>();
 
-        classDecl.getChildren(METHOD_DECL).forEach(method -> {
-            List<Symbol> paramsList = method.getChildren("Param").stream()
-                    .map(paramNode -> {
-                        String typeName = paramNode.get("typeName");
-                        boolean isArray = paramNode.getOptional("isArray").orElse("false").equals("true");
-                        String paramName = paramNode.get("name");
-                        return new Symbol(new Type(typeName, isArray), paramName);
-                    })
-                    .collect(Collectors.toList());
+        for (JmmNode method : classDecl.getChildren(METHOD_DECL)) {
+            List<Symbol> paramsList = new ArrayList<>();
 
-            map.put(method.get("method"), paramsList);
-        });
+            for (JmmNode paramNode : method.getChildren("Parameters")) {
+                String type = paramNode.getChild(0).get("name");
+                boolean isArray = paramNode.getOptional("isArray").orElse("false").equals("true");
+                String parameter = paramNode.get("name");
+                paramsList.add(new Symbol(new Type(type, isArray), parameter));
+            }
 
-        return map;*/
-        return null;
+            map.put(method.get("name"), paramsList);
+        }
+        return map;
     }
 
 

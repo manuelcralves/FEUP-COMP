@@ -80,8 +80,12 @@ type locals [boolean isArray = false]
     | name=VOID
     ;
 
+parameter
+    : type name=ID #Parameters
+    ;
+
 methodDecl locals [boolean isPublic=false]
-    : (access=PUBLIC {$isPublic=true;})? type name=ID LPAREN (type parameters+=ID ( COLON type parameters+=ID )* )? RPAREN LCURLY varDecl* stmt* ret #Method
+    : (access=PUBLIC {$isPublic=true;})? type name=ID LPAREN ( parameter ( COLON parameter )* )? RPAREN LCURLY varDecl* stmt* ret #Method
     | (access=PUBLIC {$isPublic=true;})? STATIC type name=MAIN LPAREN STRING LSQUARE RSQUARE args=ID RPAREN LCURLY varDecl* stmt* RCURLY #Main
     ;
 
