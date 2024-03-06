@@ -63,7 +63,7 @@ importDecl
     ;
 
 classDecl
-    : CLASS className=ID (EXTEND extendName=ID)? LCURLY varDecl* methodDecl* RCURLY #Class
+    : (access=PUBLIC)? CLASS className=ID (EXTEND extendName=ID)? LCURLY varDecl* methodDecl* RCURLY
     ;
 
 varDecl

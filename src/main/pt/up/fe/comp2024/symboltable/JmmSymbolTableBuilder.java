@@ -10,28 +10,25 @@ import pt.up.fe.specs.util.SpecsCheck;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static pt.up.fe.comp2024.ast.Kind.METHOD_DECL;
-import static pt.up.fe.comp2024.ast.Kind.VAR_DECL;
+import static pt.up.fe.comp2024.ast.Kind.*;
 
 public class JmmSymbolTableBuilder {
 
 
     public static JmmSymbolTable build(JmmNode root) {
 
-        var classDecl = root.getJmmChild(0);
+        var classDecl = root.getChildren(CLASS_DECL).get(0);
         SpecsCheck.checkArgument(Kind.CLASS_DECL.check(classDecl), () -> "Expected a class declaration: " + classDecl);
-        String className = classDecl.get("name");
-        String superClass = classDecl.getOptional("extends").orElse(null);
+        String className = classDecl.get("className");
+        String superClass = classDecl.getOptional("extendName").orElse(null);
 
-        List<String> imports = buildImports(root);
-
+        var imports = buildImports(root);
         var methods = buildMethods(classDecl);
         var returnTypes = buildReturnTypes(classDecl);
         var params = buildParams(classDecl);
         var locals = buildLocals(classDecl);
-        var fields = buildFields(classDecl);
 
-        return new JmmSymbolTable(className, methods, returnTypes, params, locals, imports, superClass, fields);
+        return new JmmSymbolTable(className, methods, returnTypes, params, locals, imports, superClass);
     }
 
 private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
@@ -108,9 +105,18 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
     }
 
     private static List<String> buildImports(JmmNode root) {
-        return root.getChildren(Kind.IMPORT_DECL).stream()
-                .map(importNode -> String.join(".", importNode.get("names")))
-                .collect(Collectors.toList());
+        List<String> imports = (List<String>) root.getJmmChild(0).getObject("names");
+
+        StringBuilder sb = new StringBuilder();
+
+        if(imports != null) {
+            sb.append(imports.get(0));
+            for (int i = 1; i < imports.size(); i++) {
+                sb.append(".").append(imports.get(i));
+            }
+        }
+        imports.add(sb.toString());
+        return imports;
     }
 
     private static List<Symbol> buildFields(JmmNode classDecl) {
