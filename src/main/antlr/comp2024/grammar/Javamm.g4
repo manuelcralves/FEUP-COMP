@@ -67,7 +67,7 @@ classDecl
     ;
 
 varDecl
-    : typeName=type name=ID SEMI #Var
+    : type name=ID SEMI #Var
     ;
 
 type locals [boolean isArray = false]

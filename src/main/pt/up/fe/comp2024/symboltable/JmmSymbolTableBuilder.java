@@ -4,13 +4,11 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp2024.ast.Kind;
-import pt.up.fe.comp2024.ast.TypeUtils;
 import pt.up.fe.specs.util.SpecsCheck;
 import java.util.ArrayList;
 import java.util.List;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static pt.up.fe.comp2024.ast.Kind.*;
 
@@ -36,13 +34,12 @@ public class JmmSymbolTableBuilder {
 private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
     Map<String, Type> map = new HashMap<>();
 
-    for(var method : classDecl.getChildren(METHOD_DECL)){
+    classDecl.getChildren(METHOD_DECL).forEach(method -> {
         JmmNode returnType = method.getChildren(TYPE).get(0);
-        Type type =  new Type(returnType.get("name"), Boolean.parseBoolean(returnType.get("isArray")));
+        Type type = new Type(returnType.get("name"), Boolean.parseBoolean(returnType.getOptional("isArray").orElse("false")));
         map.put(method.get("name"), type);
-    }
+    });
 
-    System.out.println(map);
     return map;
 }
 
@@ -65,26 +62,18 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
         return map;
     }
 
-
     private static Map<String, List<Symbol>> buildLocals(JmmNode classDecl) {
-        /*Map<String, List<Symbol>> map = new HashMap<>();
+        Map<String, List<Symbol>> map = new HashMap<>();
 
-        classDecl.getChildren(METHOD_DECL).forEach(method -> {
-            List<Symbol> localsList = new ArrayList<>();
-            var localVars = method.getDescendants(Kind.VAR_DECL);
-            for (JmmNode localVar : localVars) {
-                String varName = localVar.get("name");
-                String typeName = localVar.get("type");
-                boolean isArray = localVar.getOptional("isArray").orElse("false").equals("true");
-                localsList.add(new Symbol(new Type(typeName, isArray), varName));
-            }
-            map.put(method.get("method"), localsList);
+        classDecl.getChildren(METHOD_DECL).forEach(methodNode -> {
+            List<Symbol> localsList = getLocalsList(methodNode);
+            map.put(methodNode.get("name"), localsList);
         });
 
-        return map;*/
-        return null;
-    }
+        map.put(classDecl.get("name"), getLocalsList(classDecl));
 
+        return map;
+    }
 
     private static List<String> buildMethods(JmmNode classDecl) {
         return classDecl.getChildren(METHOD_DECL).stream()
@@ -94,16 +83,19 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
 
 
     private static List<Symbol> getLocalsList(JmmNode methodDecl) {
-        /*return methodDecl.getChildren(VAR_DECL).stream()
-                .map(varDecl -> {
-                    String typeName = varDecl.get("type");
-                    boolean isArray = varDecl.getOptional("isArray").orElse("false").equals("true");
-                    Type varType = new Type(typeName, isArray);
-                    String varName = varDecl.get("name");
-                    return new Symbol(varType, varName);
-                })
-                .collect(Collectors.toList());*/
-        return null;
+        List<Symbol> localsList = new ArrayList<>();
+
+        methodDecl.getChildren(VAR_DECL).forEach(varNode -> {
+            String varName = varNode.get("name");
+            JmmNode typeNode = varNode.getChildren("Type").get(0);
+            localsList.add(new Symbol(new Type(
+                    typeNode.get("name"),
+                    Boolean.parseBoolean(typeNode.get("isArray"))), varName
+            ));
+        });
+
+        return localsList;
+
     }
 
     private static List<String> buildImports(JmmNode root) {
@@ -113,7 +105,7 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
         for (var importDecl : root.getChildren(IMPORT_DECL)) {
             String namesString = importDecl.get("names");
 
-            namesString = namesString.replaceAll("\\[|\\]|\\s", "");
+            namesString = namesString.replaceAll("\\[|]|\\s", "");
 
             String[] namesArray = namesString.split(",");
 

@@ -35,13 +35,12 @@ public class Launcher {
         // Print AST
         System.out.println(parserResult.getRootNode().toTree());
 
-        //System.exit(0);
-
         // Semantic Analysis stage
         JmmAnalysisImpl sema = new JmmAnalysisImpl();
         JmmSemanticsResult semanticsResult = sema.semanticAnalysis(parserResult);
         TestUtils.noErrors(semanticsResult.getReports());
 
+        System.exit(0);
 
         // Optimization stage
         JmmOptimizationImpl ollirGen = new JmmOptimizationImpl();
