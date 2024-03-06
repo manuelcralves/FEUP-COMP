@@ -36,9 +36,9 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
 
     classDecl.getChildren(METHOD_DECL).forEach(method -> {
         var returnTypeNode = method.getJmmChild(0);
-        String typeName = returnTypeNode.get("type");
+        String typeName = returnTypeNode.get("typeName");
         boolean isArray = returnTypeNode.getOptional("isArray").orElse("false").equals("true");
-        map.put(method.get("name"), new Type(typeName, isArray));
+        map.put(method.get("method"), new Type(typeName, isArray));
     });
 
     return map;
@@ -51,14 +51,14 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
         classDecl.getChildren(METHOD_DECL).forEach(method -> {
             List<Symbol> paramsList = method.getChildren("Param").stream()
                     .map(paramNode -> {
-                        String typeName = paramNode.get("type");
+                        String typeName = paramNode.get("typeName");
                         boolean isArray = paramNode.getOptional("isArray").orElse("false").equals("true");
                         String paramName = paramNode.get("name");
                         return new Symbol(new Type(typeName, isArray), paramName);
                     })
                     .collect(Collectors.toList());
 
-            map.put(method.get("name"), paramsList);
+            map.put(method.get("method"), paramsList);
         });
 
         return map;
@@ -77,7 +77,7 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
                 boolean isArray = localVar.getOptional("isArray").orElse("false").equals("true");
                 localsList.add(new Symbol(new Type(typeName, isArray), varName));
             }
-            map.put(method.get("name"), localsList);
+            map.put(method.get("method"), localsList);
         });
 
         return map;
@@ -87,7 +87,7 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
     private static List<String> buildMethods(JmmNode classDecl) {
 
         return classDecl.getChildren(METHOD_DECL).stream()
-                .map(method -> method.get("name"))
+                .map(method -> method.get("method"))
                 .toList();
     }
 
@@ -105,27 +105,27 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
     }
 
     private static List<String> buildImports(JmmNode root) {
-        List<String> imports = (List<String>) root.getJmmChild(0).getObject("names");
+        List<String> imports = new ArrayList<>();
 
-        StringBuilder sb = new StringBuilder();
+        List<JmmNode> importDecls = root.getChildren("Import");
 
-        if(imports != null) {
-            sb.append(imports.get(0));
-            for (int i = 1; i < imports.size(); i++) {
-                sb.append(".").append(imports.get(i));
+        if (!importDecls.isEmpty()) {
+            JmmNode importNode = importDecls.get(0);
+
+            imports = (List<String>) importNode.getObject("names");
+
+            StringBuilder sb = new StringBuilder();
+
+            if (imports != null) {
+                sb.append(imports.get(0));
+                for (int i = 1; i < imports.size(); i++) {
+                    sb.append(".").append(imports.get(i));
+                }
             }
+            imports.add(sb.toString());
         }
-        imports.add(sb.toString());
+
         return imports;
     }
-
-    private static List<Symbol> buildFields(JmmNode classDecl) {
-        return classDecl.getChildren(Kind.VAR_DECL).stream()
-                .map(varDeclNode -> new Symbol(
-                        new Type(varDeclNode.get("type"), Boolean.parseBoolean(varDeclNode.getOptional("isArray").orElse("false"))),
-                        varDeclNode.get("name")))
-                .collect(Collectors.toList());
-    }
-
 
 }
