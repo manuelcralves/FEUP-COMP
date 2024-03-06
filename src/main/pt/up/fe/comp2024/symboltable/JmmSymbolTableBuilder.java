@@ -6,6 +6,8 @@ import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp2024.ast.Kind;
 import pt.up.fe.comp2024.ast.TypeUtils;
 import pt.up.fe.specs.util.SpecsCheck;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,7 +21,7 @@ public class JmmSymbolTableBuilder {
 
         var classDecl = root.getChildren(CLASS_DECL).get(0);
         SpecsCheck.checkArgument(Kind.CLASS_DECL.check(classDecl), () -> "Expected a class declaration: " + classDecl);
-        String className = classDecl.get("className");
+        String className = classDecl.get("name");
         String superClass = classDecl.getOptional("extendName").orElse(null);
 
         var imports = buildImports(root);
@@ -34,19 +36,19 @@ public class JmmSymbolTableBuilder {
 private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
     Map<String, Type> map = new HashMap<>();
 
-    classDecl.getChildren(METHOD_DECL).forEach(method -> {
-        var returnTypeNode = method.getJmmChild(0);
-        String typeName = returnTypeNode.get("typeName");
-        boolean isArray = returnTypeNode.getOptional("isArray").orElse("false").equals("true");
-        map.put(method.get("method"), new Type(typeName, isArray));
-    });
+    for(var method : classDecl.getChildren(METHOD_DECL)){
+        JmmNode returnType = method.getChildren(TYPE).get(0);
+        Type type =  new Type(returnType.get("name"), Boolean.parseBoolean(returnType.get("isArray")));
+        map.put(method.get("name"), type);
+    }
 
+    System.out.println(map);
     return map;
 }
 
 
     private static Map<String, List<Symbol>> buildParams(JmmNode classDecl) {
-        Map<String, List<Symbol>> map = new HashMap<>();
+        /*Map<String, List<Symbol>> map = new HashMap<>();
 
         classDecl.getChildren(METHOD_DECL).forEach(method -> {
             List<Symbol> paramsList = method.getChildren("Param").stream()
@@ -61,12 +63,13 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
             map.put(method.get("method"), paramsList);
         });
 
-        return map;
+        return map;*/
+        return null;
     }
 
 
     private static Map<String, List<Symbol>> buildLocals(JmmNode classDecl) {
-        Map<String, List<Symbol>> map = new HashMap<>();
+        /*Map<String, List<Symbol>> map = new HashMap<>();
 
         classDecl.getChildren(METHOD_DECL).forEach(method -> {
             List<Symbol> localsList = new ArrayList<>();
@@ -80,20 +83,20 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
             map.put(method.get("method"), localsList);
         });
 
-        return map;
+        return map;*/
+        return null;
     }
 
 
     private static List<String> buildMethods(JmmNode classDecl) {
-
         return classDecl.getChildren(METHOD_DECL).stream()
-                .map(method -> method.get("method"))
+                .map(method -> method.get("name"))
                 .toList();
     }
 
 
     private static List<Symbol> getLocalsList(JmmNode methodDecl) {
-        return methodDecl.getChildren(VAR_DECL).stream()
+        /*return methodDecl.getChildren(VAR_DECL).stream()
                 .map(varDecl -> {
                     String typeName = varDecl.get("type");
                     boolean isArray = varDecl.getOptional("isArray").orElse("false").equals("true");
@@ -101,30 +104,24 @@ private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
                     String varName = varDecl.get("name");
                     return new Symbol(varType, varName);
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toList());*/
+        return null;
     }
 
     private static List<String> buildImports(JmmNode root) {
+
         List<String> imports = new ArrayList<>();
 
-        List<JmmNode> importDecls = root.getChildren("Import");
+        for (var importDecl : root.getChildren(IMPORT_DECL)) {
+            String namesString = importDecl.get("names");
 
-        if (!importDecls.isEmpty()) {
-            JmmNode importNode = importDecls.get(0);
+            namesString = namesString.replaceAll("\\[|\\]|\\s", "");
 
-            imports = (List<String>) importNode.getObject("names");
+            String[] namesArray = namesString.split(",");
 
-            StringBuilder sb = new StringBuilder();
-
-            if (imports != null) {
-                sb.append(imports.get(0));
-                for (int i = 1; i < imports.size(); i++) {
-                    sb.append(".").append(imports.get(i));
-                }
-            }
-            imports.add(sb.toString());
+            String impString = String.join(".", namesArray);
+            imports.add(impString);
         }
-
         return imports;
     }
 

@@ -1,3 +1,4 @@
+import foo.bar;
 
 class MethodsAndFields{
 	int field1;

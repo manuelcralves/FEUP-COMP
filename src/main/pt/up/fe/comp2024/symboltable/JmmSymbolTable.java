@@ -37,9 +37,7 @@ public class JmmSymbolTable implements SymbolTable {
     }
 
     @Override
-    public List<String> getImports() {
-        return Collections.unmodifiableList(imports);
-    }
+    public List<String> getImports() { return imports;}
 
     @Override
     public String getClassName() {
@@ -64,22 +62,20 @@ public class JmmSymbolTable implements SymbolTable {
     @Override
     public Type getReturnType(String methodSignature) {
 
-        if (returnTypes.containsKey(methodSignature)) {
-            return returnTypes.get(methodSignature);
-        }
-
-        return null;
+        return returnTypes.get(methodSignature);
     }
 
 
     @Override
     public List<Symbol> getParameters(String methodSignature) {
-        return Collections.unmodifiableList(params.get(methodSignature));
+        //return Collections.unmodifiableList(params.get(methodSignature));
+        return params.get(methodSignature);
     }
 
     @Override
     public List<Symbol> getLocalVariables(String methodSignature) {
-        return Collections.unmodifiableList(locals.get(methodSignature));
+        return Collections.emptyList();
+       //return Collections.unmodifiableList(locals.get(methodSignature));
     }
 
 }
