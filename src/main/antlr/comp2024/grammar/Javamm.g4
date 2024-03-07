@@ -67,8 +67,7 @@ classDecl
     ;
 
 varDecl
-    : type name=ID SEMI #Var
-    | type name=MAIN SEMI #VarMain
+    : type name=(ID | MAIN) SEMI #Var
     ;
 
 type locals [boolean isArray = false]
@@ -91,8 +90,7 @@ methodDecl locals [boolean isPublic=false]
     ;
 
 ret
-    : RETURN expr SEMI RCURLY #Return
-    | RETURN MAIN SEMI RCURLY #ReturnMain
+    : RETURN (expr | MAIN) SEMI RCURLY #Return
     ;
 
 stmt
