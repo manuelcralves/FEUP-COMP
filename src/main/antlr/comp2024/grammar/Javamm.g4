@@ -86,7 +86,7 @@ parameter
 
 methodDecl locals [boolean isPublic=false]
     : (access=PUBLIC {$isPublic=true;})? type name=ID LPAREN ( parameter ( COLON parameter )* )? RPAREN LCURLY varDecl* stmt* ret #Method
-    | (access=PUBLIC {$isPublic=true;})? STATIC type name=MAIN LPAREN STRING LSQUARE RSQUARE args=ID RPAREN LCURLY varDecl* stmt* RCURLY #Main
+    | (access=PUBLIC {$isPublic=true;})? STATIC VOID name=MAIN LPAREN type LSQUARE RSQUARE args=ID RPAREN LCURLY varDecl* stmt* RCURLY #Main
     ;
 
 ret :
