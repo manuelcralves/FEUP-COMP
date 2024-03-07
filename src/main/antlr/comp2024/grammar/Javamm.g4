@@ -68,6 +68,7 @@ classDecl
 
 varDecl
     : type name=ID SEMI #Var
+    | type name=MAIN SEMI #VarMain
     ;
 
 type locals [boolean isArray = false]
@@ -89,8 +90,10 @@ methodDecl locals [boolean isPublic=false]
     | (access=PUBLIC {$isPublic=true;})? STATIC VOID name=MAIN LPAREN type LSQUARE RSQUARE args=ID RPAREN LCURLY varDecl* stmt* RCURLY #Main
     ;
 
-ret :
-    RETURN expr SEMI RCURLY #Return;
+ret
+    : RETURN expr SEMI RCURLY #Return
+    | RETURN MAIN SEMI RCURLY #ReturnMain
+    ;
 
 stmt
     : LCURLY stmt* RCURLY #Block

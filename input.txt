@@ -1,10 +1,10 @@
 import foo.bar;
 
 class MethodsAndFields{
-	int field1;
+	int main;
 
 	public int getField1(){
-		return field1;
+		return main;
 	}
 
 	public static void main(String[] args){
