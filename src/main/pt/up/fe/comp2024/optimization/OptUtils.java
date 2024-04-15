@@ -3,11 +3,13 @@ package pt.up.fe.comp2024.optimization;
 import org.specs.comp.ollir.Instruction;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
+import pt.up.fe.comp2024.ast.Kind;
 import pt.up.fe.comp2024.ast.NodeUtils;
 import pt.up.fe.specs.util.exceptions.NotImplementedException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static pt.up.fe.comp2024.ast.Kind.TYPE;
 
@@ -45,13 +47,16 @@ public class OptUtils {
 
     private static String toOllirType(String typeName) {
 
-        String type = "." + switch (typeName) {
-            case "int" -> "i32";
-            default -> throw new NotImplementedException(typeName);
-        };
-
-        return type;
+        switch (typeName) {
+            case "int":
+                return "i32";
+            case "boolean":
+                return "bool";
+            case "void":
+                return "V";
+            default:
+                return typeName;
+        }
     }
-
 
 }
