@@ -54,8 +54,14 @@ public class OptUtils {
                 return "bool";
             case "void":
                 return "V";
+            case "return":
+                return "V";
+            case "extends":
+                return "extends";
+            case "field":
+                return ".field";
             default:
-                return typeName;
+                throw new NotImplementedException(typeName);
         }
     }
 
