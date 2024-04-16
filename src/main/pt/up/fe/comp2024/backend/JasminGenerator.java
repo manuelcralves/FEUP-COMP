@@ -73,19 +73,21 @@ public class JasminGenerator {
         var className = ollirResult.getOllirClass().getClassName();
         code.append(".class ").append(className).append(NL).append(NL);
 
-        // TODO: Hardcoded to Object, needs to be expanded
-        code.append(".super java/lang/Object").append(NL);
+        var superName = ollirResult.getOllirClass().getSuperClass() != null ?
+                ollirResult.getOllirClass().getSuperClass() :
+                "java/lang/Object";
+        code.append(".super ").append(superName).append(NL).append(NL);
 
         // generate a single constructor method
-        var defaultConstructor = """
-                ;default constructor
-                .method public <init>()V
-                    aload_0
-                    invokespecial java/lang/Object/<init>()V
-                    return
-                .end method
-                """;
-        code.append(defaultConstructor);
+        String defaultConstructor = String.format("""
+        ; default constructor
+        .method public <init>()V
+           aload_0
+           invokespecial %s/<init>()V
+           return
+        .end method
+        """, superName);
+        code.append(defaultConstructor).append(NL);
 
         // generate code for all other methods
         for (var method : ollirResult.getOllirClass().getMethods()) {
