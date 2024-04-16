@@ -10,6 +10,7 @@ import pt.up.fe.specs.util.utilities.StringLines;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -120,8 +121,18 @@ public class JasminGenerator {
 
         var methodName = method.getMethodName();
 
-        // TODO: Hardcoded param types and return type, needs to be expanded
-        code.append("\n.method ").append(modifier).append(methodName).append("(I)I").append(NL);
+        if(methodName.equals("main")){
+            modifier += "static ";
+        }
+
+        String params = method.getParams().stream()
+                .map(param -> paramTypeToSignature(param.getType()))
+                .collect(Collectors.joining());
+
+        String returnTypes = returnTypeToSignature(method.getReturnType());
+
+        code.append("\n.method ").append(modifier).append(method.getMethodName())
+                .append("(").append(params).append(")").append(returnTypes).append(NL);
 
         // Add limits
         code.append(TAB).append(".limit stack 99").append(NL);
@@ -142,6 +153,33 @@ public class JasminGenerator {
         return code.toString();
     }
 
+    private String paramTypeToSignature(Type type) {
+        return switch (type.toString()) {
+            case "INT32" -> "I";
+            case "BOOLEAN" -> "Z";
+            case "FLOAT32" -> "F";
+            case "DOUBLE64" -> "D";
+            case "LONG64" -> "J";
+            case "REFERENCE" -> "L" + type.toString().replace('.', '/') + ";";
+            case "STRING[]" -> "[Ljava/lang/String;";
+            default -> throw new NotImplementedException("Unsupported parameter type: " + type);
+        };
+    }
+
+    private String returnTypeToSignature(Type type) {
+        return switch (type.toString()) {
+            case "INT32" -> "I";
+            case "BOOLEAN" -> "Z";
+            case "FLOAT32" -> "F";
+            case "DOUBLE64" -> "D";
+            case "LONG64" -> "J";
+            case "REFERENCE" -> "L" + type.toString().replace('.', '/') + ";";
+            case "STRING[]" -> "[Ljava/lang/String;";
+            case "VOID" -> "V";
+            default -> throw new NotImplementedException("Unsupported return type: " + type);
+        };
+    }
+
     private String generateAssign(AssignInstruction assign) {
         var code = new StringBuilder();
 
@@ -160,11 +198,26 @@ public class JasminGenerator {
         // get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
 
-        // TODO: Hardcoded for int type, needs to be expanded
-        code.append("istore ").append(reg).append(NL);
+        if(operand instanceof ArrayOperand) {
+            return code.append("iastore").append(NL).toString();
+        }
 
-        return code.toString();
+        ElementType elemType = operand.getType().getTypeOfElement();
+
+        String operation = STORE_OPERATIONS.get(elemType);
+        if (operation == null) {
+            return "Error Storing!";
+        }
+
+        return code.append(operation).append(" ").append(reg).append(NL).toString();
     }
+
+    private static final Map<ElementType, String> STORE_OPERATIONS = Map.of(
+            ElementType.INT32, "istore",
+            ElementType.BOOLEAN, "istore",
+            ElementType.OBJECTREF, "astore",
+            ElementType.ARRAYREF, "astore"
+    );
 
     private String generateSingleOp(SingleOpInstruction singleOp) {
         return generators.apply(singleOp.getSingleOperand());
@@ -202,10 +255,24 @@ public class JasminGenerator {
     private String generateReturn(ReturnInstruction returnInst) {
         var code = new StringBuilder();
 
-        // TODO: Hardcoded to int return type, needs to be expanded
+        if (returnInst.hasReturnValue()) {
+            Operand operand = (Operand) returnInst.getOperand();
+            code.append(generators.apply(operand));
 
-        code.append(generators.apply(returnInst.getOperand()));
-        code.append("ireturn").append(NL);
+            var returnType = operand.getType().toString();
+
+            switch (returnType) {
+                case "INT32" -> code.append("ireturn").append(NL);
+                case "BOOLEAN" -> code.append("ireturn").append(NL);
+                case "FLOAT32" -> code.append("freturn").append(NL);
+                case "LONG64" -> code.append("lreturn").append(NL);
+                case "DOUBLE64" -> code.append("dreturn").append(NL);
+                case "REFERENCE" -> code.append("areturn").append(NL);
+                default -> throw new NotImplementedException("Unsupported return type: " + returnType);
+            }
+        } else {
+            code.append("return").append(NL);
+        }
 
         return code.toString();
     }
