@@ -49,6 +49,9 @@ public class JasminGenerator {
         generators.put(Operand.class, this::generateOperand);
         generators.put(BinaryOpInstruction.class, this::generateBinaryOp);
         generators.put(ReturnInstruction.class, this::generateReturn);
+        generators.put(PutFieldInstruction.class, this::generatePutField);
+        generators.put(GetFieldInstruction.class, this::generateGetField);
+        generators.put(CallInstruction.class, this::generateCall);
     }
 
     public List<Report> getReports() {
@@ -277,4 +280,35 @@ public class JasminGenerator {
         return code.toString();
     }
 
+    private String generatePutField(PutFieldInstruction putField) {
+        var code = new StringBuilder();
+
+        // TODO
+
+        return code.toString();
+    }
+
+    private String generateGetField(GetFieldInstruction getField) {
+        var code = new StringBuilder();
+
+        // TODO
+
+        return code.toString();
+    }
+
+    private String generateCall(CallInstruction call) {
+        StringBuilder code = new StringBuilder();
+
+        String type = call.getInvocationType().toString();
+        String operands = call.getOperands().toString().split(" ")[1].split("\\.")[0];
+        String name = Character.toUpperCase(operands.charAt(0)) + operands.substring(1);
+
+        if (type.equals("NEW")) {
+            code.append("new ").append(ollirResult.getOllirClass().getClassName()).append(NL).append("dup").append(NL);
+        } else {
+            code.append(type).append(" ").append(name).append("/<init>()V").append(NL);
+        }
+
+        return code.toString();
+    }
 }
