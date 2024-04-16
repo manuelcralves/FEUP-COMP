@@ -256,7 +256,7 @@ public class JasminGenerator {
         var code = new StringBuilder();
 
         if (returnInst.hasReturnValue()) {
-            Operand operand = (Operand) returnInst.getOperand();
+            Element operand = returnInst.getOperand();
             code.append(generators.apply(operand));
 
             var returnType = operand.getType().toString();
