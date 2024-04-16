@@ -9,10 +9,10 @@ import pt.up.fe.comp2024.ast.Kind;
 import pt.up.fe.comp2024.ast.NodeUtils;
 import pt.up.fe.specs.util.SpecsCheck;
 
+import java.util.List;
+
 /**
- * Checks if the type of the expression in a return statement is compatible with the method return type.
- *
- * @author JBispo
+ * Checks if a variable reference is declared in the current method's scope.
  */
 public class UndeclaredVariable extends AnalysisVisitor {
 
@@ -32,39 +32,31 @@ public class UndeclaredVariable extends AnalysisVisitor {
     private Void visitVarRefExpr(JmmNode varRefExpr, SymbolTable table) {
         SpecsCheck.checkNotNull(currentMethod, () -> "Expected current method to be set");
 
-        // Check if exists a parameter or variable declaration with the same name as the variable reference
-        var varRefName = varRefExpr.get("name");
+        // Check if the variable reference exists in the current method's scope
+        String varRefName = varRefExpr.get("name");
+        boolean variableDeclared = table.getFields().stream().anyMatch(param -> param.getName().equals(varRefName))
+                || table.getParameters(currentMethod).stream().anyMatch(param -> param.getName().equals(varRefName))
+                || table.getLocalVariables(currentMethod).stream().anyMatch(varDecl -> varDecl.getName().equals(varRefName));
 
-        // Var is a field, return
-        if (table.getFields().stream()
-                .anyMatch(param -> param.getName().equals(varRefName))) {
-            return null;
+        // If the variable is not declared, create an error report
+        if (!variableDeclared) {
+            String message = String.format("Variable '%s' is not declared in the current scope.", varRefName);
+            addReport(Report.newError(
+                    Stage.SEMANTIC,
+                    NodeUtils.getLine(varRefExpr),
+                    NodeUtils.getColumn(varRefExpr),
+                    message,
+                    null)
+            );
         }
-
-        // Var is a parameter, return
-        if (table.getParameters(currentMethod).stream()
-                .anyMatch(param -> param.getName().equals(varRefName))) {
-            return null;
-        }
-
-        // Var is a declared variable, return
-        if (table.getLocalVariables(currentMethod).stream()
-                .anyMatch(varDecl -> varDecl.getName().equals(varRefName))) {
-            return null;
-        }
-
-        // Create error report
-        var message = String.format("Variable '%s' does not exist.", varRefName);
-        addReport(Report.newError(
-                Stage.SEMANTIC,
-                NodeUtils.getLine(varRefExpr),
-                NodeUtils.getColumn(varRefExpr),
-                message,
-                null)
-        );
 
         return null;
     }
 
-
+    @Override
+    public List<Report> analyze(JmmNode root, SymbolTable table) {
+        // Call the parent method to perform the analysis
+        super.analyze(root, table);
+        return getReports();
+    }
 }
