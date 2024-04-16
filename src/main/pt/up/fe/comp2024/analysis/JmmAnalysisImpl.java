@@ -11,6 +11,8 @@ import pt.up.fe.comp.jmm.report.Stage;
 import pt.up.fe.comp2024.analysis.passes.Analysispasses;
 import pt.up.fe.comp2024.analysis.passes.UndeclaredVariable;
 import pt.up.fe.comp2024.symboltable.JmmSymbolTableBuilder;
+import pt.up.fe.comp2024.analysis.VariableDeclarationCheck;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +22,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
     private final List<AnalysisPass> analysisPasses;
 
     public JmmAnalysisImpl() {
-        this.analysisPasses = List.of(new UndeclaredVariable(), new Analysispasses()); // Add Analysispasses instance
+        this.analysisPasses = List.of(new Analysispasses(), new UndeclaredVariable(), new VariableDeclarationCheck());
     }
 
     @Override
@@ -50,4 +52,5 @@ public class JmmAnalysisImpl implements JmmAnalysis {
 
         return new JmmSemanticsResult(parserResult, table, reports);
     }
+
 }
