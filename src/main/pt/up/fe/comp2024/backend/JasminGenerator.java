@@ -192,11 +192,9 @@ public class JasminGenerator {
         // store value in the stack in destination
         var lhs = assign.getDest();
 
-        if (!(lhs instanceof Operand)) {
+        if (!(lhs instanceof Operand operand)) {
             throw new NotImplementedException(lhs.getClass());
         }
-
-        var operand = (Operand) lhs;
 
         // get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
@@ -265,8 +263,7 @@ public class JasminGenerator {
             var returnType = operand.getType().toString();
 
             switch (returnType) {
-                case "INT32" -> code.append("ireturn").append(NL);
-                case "BOOLEAN" -> code.append("ireturn").append(NL);
+                case "INT32", "BOOLEAN" -> code.append("ireturn").append(NL);
                 case "FLOAT32" -> code.append("freturn").append(NL);
                 case "LONG64" -> code.append("lreturn").append(NL);
                 case "DOUBLE64" -> code.append("dreturn").append(NL);
@@ -280,20 +277,72 @@ public class JasminGenerator {
         return code.toString();
     }
 
-    private String generatePutField(PutFieldInstruction putField) {
-        var code = new StringBuilder();
+    private static final Map<String, String> TYPE_DESCRIPTOR = Map.of(
+    "INT32", "I",
+    "BOOLEAN", "Z",
+    "FLOAT32", "F",
+    "DOUBLE64", "D",
+    "LONG64", "J",
+    "REFERENCE", "L",
+    "STRING[]", "[Ljava/lang/String;"
+    );
 
-        // TODO
+    private static final Map<String, String> TYPE_LOAD_INST = Map.of(
+        "INT32", "iload",
+        "BOOLEAN", "iload",
+        "FLOAT32", "fload",
+        "REFERENCE", "aload"
+    );
 
-        return code.toString();
+    private String getTypeDescriptor(Type type) {
+        String descriptor = TYPE_DESCRIPTOR.get(type.toString());
+        if (descriptor == null) {
+            throw new NotImplementedException("Unsupported type: " + type);
+        }
+        return descriptor;
+    }
+
+    private String getLoadInstruction(Type type) {
+        String instruction = TYPE_LOAD_INST.get(type.toString());
+        if (instruction == null) {
+            throw new NotImplementedException("Load instruction missing for type: " + type);
+        }
+        return instruction;
     }
 
     private String generateGetField(GetFieldInstruction getField) {
-        var code = new StringBuilder();
+        Operand object = getField.getObject();
+        Operand field = getField.getField();
 
-        // TODO
+        return String.format("\taload %d\n\tgetfield %s/%s %s\n",
+                currentMethod.getVarTable().get(object.getName()).getVirtualReg(),
+            currentMethod.getOllirClass().getClassName().replace('.', '/'),
+            field.getName(),
+            getTypeDescriptor(field.getType())
+        );
+    }
 
-        return code.toString();
+    private String generatePutField(PutFieldInstruction putField) {
+        Operand object = putField.getObject();
+        Operand field = putField.getField();
+        Element value = putField.getValue();
+
+        String valueCode;
+        if (value instanceof LiteralElement) {
+            valueCode = "\tldc " + ((LiteralElement) value).getLiteral() + "\n";
+        } else if (value instanceof Operand) {
+            valueCode = String.format("\t%s %d\n", getLoadInstruction(value.getType()), currentMethod.getVarTable().get(((Operand) value).getName()).getVirtualReg());
+        } else {
+            throw new NotImplementedException("Unsupported value type: " + value);
+        }
+
+        return String.format("\taload %d\n%s\tputfield %s/%s %s\n",
+                currentMethod.getVarTable().get(object.getName()).getVirtualReg(),
+            valueCode,
+            currentMethod.getOllirClass().getClassName().replace('.', '/'),
+            field.getName(),
+            getTypeDescriptor(field.getType())
+        );
     }
 
     private String generateCall(CallInstruction call) {
