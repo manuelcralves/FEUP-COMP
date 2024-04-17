@@ -11,33 +11,24 @@ public enum Kind {
     IMPORT_DECL,
     CLASS_DECL,
     VAR_DECL,
-    INT_ARRAY_TYPE,
-    INT_TYPE,
-    INT_DOTS_TYPE,
-    BOOL_TYPE,
-    STRING_TYPE,
-    ID_TYPE,
-    VOID_TYPE,
     TYPE,
     METHOD_DECL,
     PARAM,
-    IF_ELSE_STMT,
-    WHILE_STMT,
-    EXPR_STMT,
     ASSIGN_STMT,
     RETURN_STMT,
     BINARY_EXPR,
+    METHOD_CALL_EXPR,
+    EXPR_STMT,
     INTEGER_LITERAL,
-    VAR_REF_EXPR,
-    LOGICAL_EXPR,
-    BOOL_LITERAL,
-    IDENTIFIER,
-    THIS;
+    //BOOL_LITERAL,
+    VAR_REF_EXPR;
+    //BYNARY_OP,
+    //THIS;
 
 
-    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT, IF_ELSE_STMT, WHILE_STMT, EXPR_STMT);
-    private static final Set<Kind> EXPRESSIONS = Set.of(BINARY_EXPR, INTEGER_LITERAL, VAR_REF_EXPR, LOGICAL_EXPR, BOOL_LITERAL, IDENTIFIER, THIS);
-    private static final Set<Kind> TYPES = Set.of(INT_TYPE, INT_DOTS_TYPE, BOOL_TYPE, STRING_TYPE, INT_ARRAY_TYPE, VOID_TYPE);
+    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT);
+    private static final Set<Kind> EXPRESSIONS = Set.of(BINARY_EXPR, INTEGER_LITERAL, VAR_REF_EXPR);
+
     private final String name;
 
     private Kind(String name) {
@@ -79,10 +70,6 @@ public enum Kind {
      */
     public boolean isExpr() {
         return EXPRESSIONS.contains(this);
-    }
-
-    public boolean isType() {
-        return TYPES.contains(this);
     }
 
     /**
@@ -139,9 +126,5 @@ public enum Kind {
             // throw if none matches
             throw new RuntimeException("Node '" + node + "' is not any of " + Arrays.asList(kindsToTest));
         }
-    }
-
-    public static boolean checkIsType(JmmNode node) {
-        return TYPES.stream().map(Kind::getNodeName).anyMatch(type_name -> type_name.equals(node.getKind()));
     }
 }
