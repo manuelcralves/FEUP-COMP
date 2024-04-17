@@ -48,7 +48,7 @@ public class VariableDeclarationCheck extends AnalysisVisitor {
 
     private Void visitImportDecl(JmmNode importDecl, SymbolTable table) {
         // Check if the "name" attribute exists and is not null
-        String importedClassName = importDecl.get("name");
+        String importedClassName = importDecl.get("names");
         if (importedClassName != null) {
             // Initialize the importedClasses list if it hasn't been initialized yet
             if (importedClasses == null) {

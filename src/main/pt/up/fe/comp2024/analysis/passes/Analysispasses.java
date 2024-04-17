@@ -30,7 +30,7 @@ public class Analysispasses extends AnalysisVisitor {
             importedClasses = new ArrayList<>();
         }
         // Add imported class to the list
-        String importedClass = importDecl.get("name");
+        String importedClass = importDecl.get("names");
         importedClasses.add(importedClass);
         return null;
     }
