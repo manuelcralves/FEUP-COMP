@@ -56,7 +56,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         addVisit(EXPR_STMT, this::visitExprStmt);
         addVisit(PARAM, this::visitParam);
         addVisit(RETURN_STMT, this::visitReturn);
-        addVisit(ASSIGN_STMT, this::visitAssignStmt);
+        addVisit("Assign", this::visitAssignStmt);
 
         setDefaultVisit(this::defaultVisit);
     }
@@ -64,19 +64,23 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
     private String visitAssignStmt(JmmNode node, Void unused) {
 
-        var lhs = exprVisitor.visit(node.getJmmChild(0));
-        var rhs = exprVisitor.visit(node.getJmmChild(1));
+        //var lhs = exprVisitor.visit(node.getJmmChild(0));
+        var rhs = exprVisitor.visit(node.getJmmChild(0));
+
 
         StringBuilder code = new StringBuilder();
 
-        code.append(lhs.getComputation());
+        //code.append(lhs.getComputation());
         code.append(rhs.getComputation());
+
+        String name = node.get("varName");
 
         Type thisType = TypeUtils.getExprType(node.getJmmChild(0), table);
         String typeString = OptUtils.toOllirType(thisType);
 
 
-        code.append(lhs.getCode());
+        code.append(name);
+        code.append(typeString);
         code.append(SPACE);
 
         code.append(ASSIGN);
@@ -207,7 +211,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         code.append(table.getClassName());
         String superClass = table.getSuper();
-        if(!table.getSuper().equals("")) {
+        if(superClass != null && !superClass.equals("")) {
             code.append(SPACE);
             code.append(EXTENDS);
             code.append(SPACE);
@@ -243,17 +247,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
                 "}\n";
     }
 
-
-    private String visitProgram(JmmNode node, Void unused) {
-
-        StringBuilder code = new StringBuilder();
-
-        node.getChildren().stream()
-                .map(this::visit)
-                .forEach(code::append);
-
-        return code.toString();
-    }
 
     private Type getVarType(String v, String method){
         if(method != null){
@@ -354,6 +347,17 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
     private String visitExprStmt(JmmNode node, Void unused) {
         return visit(node.getJmmChild(0));
+    }
+
+    private String visitProgram(JmmNode node, Void unused) {
+
+        StringBuilder code = new StringBuilder();
+
+        node.getChildren().stream()
+                .map(this::visit)
+                .forEach(code::append);
+
+        return code.toString();
     }
 
     /**

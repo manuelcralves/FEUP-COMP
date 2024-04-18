@@ -116,9 +116,9 @@ expr
     | expr op=(LT|LTE|MT|MTE) expr #BinaryOp
     | expr op=LOGICAND expr #BinaryOp
     | expr op=LOGICOR expr #BinaryOp
-    | var=INTEGER #Integer
-    | var=TRUE #Boolean
-    | var=FALSE #Boolean
-    | name = ID #Id
+    | value=INTEGER #IntegerLiteral
+    | value=TRUE #Boolean
+    | value=FALSE #Boolean
+    | name = ID #VarRefExpr
     | THIS #This
     ;
