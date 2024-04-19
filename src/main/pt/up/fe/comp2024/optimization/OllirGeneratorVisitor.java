@@ -133,8 +133,8 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
     private String visitImportDecl(JmmNode node, Void unused) {
 
-        var idElem = node.get("names");
-        var idList = idElem.substring(1, idElem.length() - 1).split(", ");
+        var idElement = node.get("names");
+        var idList = idElement.substring(1, idElement.length() - 1).split(", ");
         StringBuilder code = new StringBuilder();
         code.append(IMPORT);
         code.append(SPACE);
@@ -164,13 +164,13 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         var name = node.get("name");
         code.append(name);
 
-        int paramCurr = 0;
+        int param = 0;
 
         // param
         code.append("(");
         var itr = node.getChildren(PARAM).iterator();
         while (itr.hasNext()){
-            paramCurr++;
+            param++;
             var child = itr.next();
             code.append(visit(child));
             if(itr.hasNext())
@@ -181,12 +181,12 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         // type
         var retType = OptUtils.toOllirType(table.getReturnType(name));
-        paramCurr++;
+        param++;
         code.append(retType);
         code.append(L_BRACKET);
 
 
-        for (int i = paramCurr; i < node.getNumChildren(); i++) {
+        for (int i = param; i < node.getNumChildren(); i++) {
             var child = node.getJmmChild(i);
             var childCode = visit(child);
             code.append(childCode);
@@ -248,24 +248,22 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     }
 
 
-    private Type getVarType(String v, String method){
+    private Type getVarType(String s, String method){
         if(method != null){
             for(var lVar : table.getLocalVariables(method))
-                if(lVar.getName().equals(v))
+                if(lVar.getName().equals(s))
                     return lVar.getType();
             for(var lParam : table.getParameters(method))
-                if(lParam.getName().equals(v))
+                if(lParam.getName().equals(s))
                     return lParam.getType();
         }
         for(var lField : table.getFields())
-            if(lField.getName().equals(v))
+            if(lField.getName().equals(s))
                 return lField.getType();
         return null;
     }
 
     private String visitVarRefDecl(JmmNode varRefExpr, Void unused) {
-
-
         var parentOpt = varRefExpr.getAncestor(METHOD_DECL);
         if(parentOpt.isEmpty())
             parentOpt = varRefExpr.getAncestor(CLASS_DECL);
@@ -276,26 +274,25 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         StringBuilder code = new StringBuilder();
 
         code.append(varRefExpr.get("name"));
-        if(parent.isInstance(METHOD_DECL)) {
+        if(parent.isInstance("Method")) {
             var type = getVarType(varRefExpr.get("name"), parent.get("name"));
-            assert type != null;
-            code.append(OptUtils.toOllirType(type));
+            if (type == null) {
+                code.append(" /* Tipo não encontrado para variável: ").append(varRefExpr.get("name")).append(" */");
+            } else {
+                code.append(OptUtils.toOllirType(type));
+            }
         }
-
-
-
         return code.toString();
     }
 
-    private boolean isImport(String type){
+    /*private boolean isImport(String type){
         for(var i : table.getImports())
             if(i.equals(type))
                 return true;
         return false;
-    }
+    }*/
 
     private String visitMethodCallExpr(JmmNode methodCallExpr, Void unused) {
-
         var classNode = methodCallExpr.getJmmChild(0);
         var methodName = methodCallExpr.get("name");
         StringBuilder code = new StringBuilder();
@@ -305,29 +302,29 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
             args.add("," + visit(methodCallExpr.getChildren().get(i)));
         }
 
-        String result = String.join("",args);
-
+        String result = String.join("", args);
         var type = TypeUtils.getExprType(methodCallExpr, table);
         var var_type = OptUtils.toOllirType(type);
 
-        if(classNode.getOptional("name").isPresent() && isImport(classNode.getOptional("name").get())){
-            var className = classNode.getOptional("name").get();
-            if(methodCallExpr.getJmmParent().getKind().equals("ExprStmt")){
-                code.append("invokestatic(");
-                code.append(className);
-                code.append(",");
-                code.append("\"");
-                code.append(methodName);
-                code.append("\"");
-                code.append(result);
-                code.append(")");
-                code.append(var_type);
-                code.append(END_STMT);
-            }
+        String invokeType = classNode.getOptional("name").isPresent() ? "invokestatic" : "invokevirtual";
+        code.append(invokeType);
+        code.append("(");
+        if (classNode.getOptional("name").isPresent()) {
+            code.append(classNode.getOptional("name").get());
+        } else {
+            code.append("this");
         }
+        code.append(",\"");
+        code.append(methodName);
+        code.append("\"");
+        code.append(result);
+        code.append(")");
+        code.append(var_type);
+        code.append(END_STMT);
+
         return code.toString();
     }
-
+    
     private String visitVarDecl(JmmNode varDecl, Void unused) {
         if(!varDecl.getParent().isInstance(CLASS_DECL))
             return "";

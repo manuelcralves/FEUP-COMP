@@ -44,7 +44,6 @@ public class OptUtils {
             case "void", "IMPORTED_TYPE" -> "V";
             case "String" -> getTemp("String") + '.' + typeName;
             default -> getTemp() + '.' + typeName;
-//            default -> throw new NotImplementedException(typeName);
         };
 
         return type;

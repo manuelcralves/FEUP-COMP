@@ -49,13 +49,6 @@ public class TypeUtils {
 
     private static Type getVarExprType(JmmNode varRefExpr, SymbolTable table) {
         // TODO: Simple implementation that needs to be expanded
-        //var = varRefExpr.getAncestor();
-        /*
-        usar get ancestor para ir buscar o methodDecl que contém a variável (ou null se for atributo da classe ou classe estática)
-        symbol table para ir buscar tipo
-        ancestor!=null => ir ver variáveis locais e params
-        ancestor==null => ir ver fields e imports
-         */
         return new Type(INT_TYPE_NAME, false);
     }
 
