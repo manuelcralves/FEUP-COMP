@@ -6,6 +6,7 @@ import pt.up.fe.comp.jmm.ast.PreorderJmmVisitor;
 import pt.up.fe.comp.jmm.report.Report;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -20,6 +21,7 @@ public abstract class AnalysisVisitor extends PreorderJmmVisitor<SymbolTable, Vo
         setDefaultValue(() -> null);
     }
 
+
     protected void addReport(Report report) {
         reports.add(report);
     }
@@ -27,6 +29,7 @@ public abstract class AnalysisVisitor extends PreorderJmmVisitor<SymbolTable, Vo
     protected List<Report> getReports() {
         return reports;
     }
+
 
 
     @Override

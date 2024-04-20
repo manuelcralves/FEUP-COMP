@@ -20,8 +20,6 @@ public class TypeUtils {
      * @return
      */
     public static Type getExprType(JmmNode expr, SymbolTable table) {
-        // TODO: Simple implementation that needs to be expanded
-
         var kind = Kind.fromString(expr.getKind());
 
         Type type = switch (kind) {
@@ -35,31 +33,35 @@ public class TypeUtils {
     }
 
     private static Type getBinExprType(JmmNode binaryExpr) {
-        // TODO: Simple implementation that needs to be expanded
-
         String operator = binaryExpr.get("op");
 
-        return switch (operator) {
-            case "+", "*" -> new Type(INT_TYPE_NAME, false);
-            default ->
-                    throw new RuntimeException("Unknown operator '" + operator + "' of expression '" + binaryExpr + "'");
-        };
+        switch (operator) {
+            case "+":
+            case "*":
+                return new Type(INT_TYPE_NAME, false);
+            case "=":
+                // Array initialization expression
+                return new Type("int[]", true);
+            default:
+                throw new RuntimeException("Unknown operator '" + operator + "' of expression '" + binaryExpr + "'");
+        }
     }
 
 
     private static Type getVarExprType(JmmNode varRefExpr, SymbolTable table) {
-        // TODO: Simple implementation that needs to be expanded
+        // Placeholder implementation, expand as needed
         return new Type(INT_TYPE_NAME, false);
     }
 
-
     /**
+     * Checks if sourceType can be assigned to destinationType.
+     *
      * @param sourceType
      * @param destinationType
      * @return true if sourceType can be assigned to destinationType
      */
     public static boolean areTypesAssignable(Type sourceType, Type destinationType) {
-        // TODO: Simple implementation that needs to be expanded
+        // Placeholder implementation, expand as needed
         return sourceType.getName().equals(destinationType.getName());
     }
 }

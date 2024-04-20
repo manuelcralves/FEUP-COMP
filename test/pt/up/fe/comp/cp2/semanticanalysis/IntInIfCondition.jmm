@@ -1,3 +1,5 @@
+package pt.up.fe.comp.cp2.semanticanalysis;
+
 class IntInIfCondition {
 
     public static void main(String[] args) {

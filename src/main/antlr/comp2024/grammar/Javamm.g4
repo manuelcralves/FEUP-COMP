@@ -58,6 +58,8 @@ program
     : importDecl* classDecl EOF
     ;
 
+
+
 importDecl
     : IMPORT names+=ID (DOT names+=ID)* SEMI #Import
     ;
@@ -92,6 +94,8 @@ methodDecl locals [boolean isPublic=false]
 ret
     : RETURN (expr | MAIN) SEMI RCURLY #Return
     ;
+
+
 
 stmt
     : LCURLY stmt* RCURLY #Block

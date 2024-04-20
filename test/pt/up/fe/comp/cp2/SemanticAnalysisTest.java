@@ -3,6 +3,8 @@ package pt.up.fe.comp.cp2;
 import org.junit.Test;
 import pt.up.fe.comp.TestUtils;
 import pt.up.fe.specs.util.SpecsIo;
+import pt.up.fe.comp2024.utils.*;
+
 
 public class SemanticAnalysisTest {
 
