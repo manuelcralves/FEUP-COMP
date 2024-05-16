@@ -8,9 +8,7 @@ import pt.up.fe.specs.util.classmap.FunctionClassMap;
 import pt.up.fe.specs.util.exceptions.NotImplementedException;
 import pt.up.fe.specs.util.utilities.StringLines;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -30,6 +28,11 @@ public class JasminGenerator {
     String code;
 
     Method currentMethod;
+
+    int limit_stack = 0;
+    int limit_method = 0;
+    int limit_locals = 0;
+    int conditionalAux = 0;
 
     private final FunctionClassMap<TreeNode, String> generators;
 
@@ -52,6 +55,26 @@ public class JasminGenerator {
         generators.put(PutFieldInstruction.class, this::generatePutField);
         generators.put(GetFieldInstruction.class, this::generateGetField);
         generators.put(CallInstruction.class, this::generateCall);
+        generators.put(OpCondInstruction.class, this::generateOpCond);
+        generators.put(GotoInstruction.class, this::generateGoto);
+        generators.put(SingleOpCondInstruction.class, this::generateSingleOpCond);
+        generators.put(UnaryOpInstruction.class, this::generateUnaryOp);
+    }
+
+    private String generateUnaryOp(UnaryOpInstruction unaryOpInstruction) {
+        return "UnaryOpInstruction not implemented yet!";
+    }
+
+    private String generateSingleOpCond(SingleOpCondInstruction singleOpCondInstruction) {
+        return "SingleOpCondInstruction not implemented yet!";
+    }
+
+    private String generateGoto(GotoInstruction gotoInstruction) {
+        return "goto " + gotoInstruction.getLabel() + NL;
+    }
+
+    private String generateOpCond(OpCondInstruction opCondInstruction) {
+        return "OpCondInstruction not implemented yet!";
     }
 
     public List<Report> getReports() {
@@ -165,6 +188,7 @@ public class JasminGenerator {
             case "LONG64" -> "J";
             case "REFERENCE" -> "L" + type.toString().replace('.', '/') + ";";
             case "STRING[]" -> "[Ljava/lang/String;";
+            case "INT32[]" -> "[I";
             default -> throw new NotImplementedException("Unsupported parameter type: " + type);
         };
     }
@@ -179,6 +203,7 @@ public class JasminGenerator {
             case "REFERENCE" -> "L" + type.toString().replace('.', '/') + ";";
             case "STRING[]" -> "[Ljava/lang/String;";
             case "VOID" -> "V";
+            case "INT32[]" -> "[I";
             default -> throw new NotImplementedException("Unsupported return type: " + type);
         };
     }
@@ -237,21 +262,58 @@ public class JasminGenerator {
     private String generateBinaryOp(BinaryOpInstruction binaryOp) {
         var code = new StringBuilder();
 
-        // load values on the left and on the right
+        // Load values for the left and right operands onto the stack
         code.append(generators.apply(binaryOp.getLeftOperand()));
         code.append(generators.apply(binaryOp.getRightOperand()));
 
-        // apply operation
-        var op = switch (binaryOp.getOperation().getOpType()) {
-            case ADD -> "iadd";
-            case MUL -> "imul";
-            default -> throw new NotImplementedException(binaryOp.getOperation().getOpType());
-        };
+        // Get the operation code from the operation type
+        String op = getOperation(binaryOp.getOperation());
 
+        // Append the operation to the code
         code.append(op).append(NL);
+
+        // Handle boolean operations with specific control flow adjustments
+        if (isBooleanOperation(binaryOp.getOperation())) {
+            String labelTrue = "TRUE" + conditionalAux;
+            String labelNext = "NEXT" + conditionalAux;
+
+            code.append(" iconst_0\n")
+                    .append("\tgoto ").append(labelNext).append("\n")
+                    .append(labelTrue).append(":\n")
+                    .append("\ticonst_1\n")
+                    .append(labelNext).append(":\n");
+
+            conditionalAux++;  // Ensure the label numbers are incremented to maintain uniqueness
+        }
 
         return code.toString();
     }
+
+    private boolean isBooleanOperation(Operation operation) {
+        return switch (operation.getOpType()) {
+            case EQ, GTH, GTE, LTH, LTE, NEQ -> true;
+            default -> false;
+        };
+    }
+
+    private String getOperation(Operation operation) {
+        return switch (operation.getOpType()) {
+            case ADD -> "iadd";
+            case SUB -> "isub";
+            case MUL -> "imul";
+            case DIV -> "idiv";
+            case LTH -> "if_icmplt";
+            case GTH -> "if_icmpgt";
+            case LTE -> "if_icmple";
+            case GTE -> "if_icmpge";
+            case EQ -> "if_icmpeq";
+            case NEQ -> "if_icmpne";
+            case ANDB -> "iand";
+            case NOTB -> "ifeq";
+            default -> throw new NotImplementedException(operation.getOpType());
+        };
+    }
+
 
     private String generateReturn(ReturnInstruction returnInst) {
         var code = new StringBuilder();
@@ -268,6 +330,7 @@ public class JasminGenerator {
                 case "LONG64" -> code.append("lreturn").append(NL);
                 case "DOUBLE64" -> code.append("dreturn").append(NL);
                 case "REFERENCE" -> code.append("areturn").append(NL);
+                case "INT32[]" -> code.append("ireturn").append(NL);
                 default -> throw new NotImplementedException("Unsupported return type: " + returnType);
             }
         } else {
@@ -359,5 +422,23 @@ public class JasminGenerator {
         }
 
         return code.toString();
+    }
+
+    private void updateStackLimits(int update) {
+        this.limit_method += update;
+        if(this.limit_method > this.limit_stack) {
+            this.limit_stack = this.limit_method;
+        }
+    }
+
+    public static int getLocalLimits(Method method) {
+        Set<Integer> virtualRegisters = new TreeSet<>();
+        virtualRegisters.add(0);
+
+        for(Descriptor descriptor : method.getVarTable().values()) {
+            virtualRegisters.add(descriptor.getVirtualReg());
+        }
+
+        return virtualRegisters.size();
     }
 }
