@@ -65,6 +65,7 @@ public class Analysispasses extends AnalysisVisitor {
         return null;
     }
 
+
     private boolean isMethodInheritedOrImported(String methodName, String targetClassName, SymbolTable table) {
         if (targetClassName == null || targetClassName.equals(table.getClassName())) {
             return table.getMethods().contains(methodName);

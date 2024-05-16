@@ -16,6 +16,7 @@ public enum Kind {
     PARAM,
     METHOD_CALL_EXPR,
     EXPR_STMT,
+    BINARY_OP,
     ASSIGN_STMT,
     RETURN_STMT,
     BINARY_EXPR,

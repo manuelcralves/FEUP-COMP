@@ -92,7 +92,7 @@ methodDecl locals [boolean isPublic=false]
     ;
 
 ret
-    : RETURN (expr | MAIN) SEMI RCURLY #Return
+    : RETURN (expr | MAIN) SEMI RCURLY #ReturnStmt
     ;
 
 
@@ -111,15 +111,15 @@ expr
     | NOT expr #Not
     | expr LSQUARE expr RSQUARE #Array
     | expr DOT LENGTH #Length
-    | expr DOT caller=ID LPAREN ( expr ( COLON expr )* )? RPAREN #CallMethod
+    | expr DOT methodName=ID LPAREN ( expr ( COLON expr )* )? RPAREN #CallMethod
     | LSQUARE (expr (COLON expr)*)? RSQUARE #NewArrayInt
     | NEW INT LSQUARE expr RSQUARE #NewArrayInt
     | NEW ID LPAREN RPAREN #NewObject
-    | expr op=(MUL|DIV) expr #BinaryOp
-    | expr op=(ADD|SUB) expr #BinaryOp
-    | expr op=(LT|LTE|MT|MTE) expr #BinaryOp
-    | expr op=LOGICAND expr #BinaryOp
-    | expr op=LOGICOR expr #BinaryOp
+    | expr op=(MUL|DIV) expr #BinaryExpr
+    | expr op=(ADD|SUB) expr #BinaryExpr
+    | expr op=(LT|LTE|MT|MTE) expr #BinaryExpr
+    | expr op=LOGICAND expr #BinaryExpr
+    | expr op=LOGICOR expr #BinaryExpr
     | value=INTEGER #IntegerLiteral
     | value=TRUE #Boolean
     | value=FALSE #Boolean
