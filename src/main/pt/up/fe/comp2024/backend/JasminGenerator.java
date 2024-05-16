@@ -62,20 +62,76 @@ public class JasminGenerator {
     }
 
     private String generateUnaryOp(UnaryOpInstruction unaryOpInstruction) {
-        return "UnaryOpInstruction not implemented yet!";
+        StringBuilder code = new StringBuilder();
+        Element operand = unaryOpInstruction.getOperand();
+        code.append(generators.apply(operand));
+
+        Type type = operand.getType();
+        switch (type.toString()) {
+            case "INT32":
+                code.append("ineg\n");
+                break;
+            case "FLOAT32":
+                code.append("fneg\n");
+                break;
+            case "BOOLEAN":
+                String labelTrue = "LabelTrue_" + conditionalAux;
+                String labelEnd = "LabelEnd_" + conditionalAux;
+                code.append("ifne ").append(labelTrue).append("\n")
+                        .append("iconst_1\n").append("goto ").append(labelEnd).append("\n").append(labelTrue).append(":\n")
+                        .append("iconst_0\n").append(labelEnd).append(":\n");
+                conditionalAux++;
+                break;
+            default:
+                throw new NotImplementedException("Unary operation not implemented for type: " + type);
+        }
+        return code.toString();
     }
 
+
+
     private String generateSingleOpCond(SingleOpCondInstruction singleOpCondInstruction) {
-        return "SingleOpCondInstruction not implemented yet!";
+        StringBuilder code = new StringBuilder();
+        Element operand = singleOpCondInstruction.getOperands().getFirst();
+        code.append(generators.apply(operand));
+
+        // Assuming the condition is to check if the operand is zero
+        code.append("ifeq LABEL_TRUE\n");
+        return code.toString();
     }
+
 
     private String generateGoto(GotoInstruction gotoInstruction) {
         return "goto " + gotoInstruction.getLabel() + NL;
     }
 
     private String generateOpCond(OpCondInstruction opCondInstruction) {
-        return "OpCondInstruction not implemented yet!";
+        StringBuilder code = new StringBuilder();
+        code.append(generators.apply(opCondInstruction.getOperands().getFirst()));
+        code.append(generators.apply(opCondInstruction.getOperands().getLast()));
+
+        Operation operation = opCondInstruction.getCondition().getOperation();
+        String jmpLabel = "LABEL_TRUE";
+
+        switch (operation.getOpType()) {
+            case LTH:
+                code.append("if_icmplt ").append(jmpLabel).append("\n");
+                break;
+            case GTH:
+                code.append("if_icmpgt ").append(jmpLabel).append("\n");
+                break;
+            case LTE:
+                code.append("if_icmple ").append(jmpLabel).append("\n");
+                break;
+            case GTE:
+                code.append("if_icmpge ").append(jmpLabel).append("\n");
+                break;
+            default:
+                throw new NotImplementedException("Operation not implemented: " + operation.getOpType());
+        }
+        return code.toString();
     }
+
 
     public List<Report> getReports() {
         return reports;
