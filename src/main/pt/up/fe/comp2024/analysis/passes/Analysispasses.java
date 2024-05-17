@@ -7,6 +7,7 @@ import pt.up.fe.comp.jmm.report.Stage;
 import pt.up.fe.comp2024.analysis.AnalysisVisitor;
 import pt.up.fe.comp2024.ast.Kind;
 import pt.up.fe.comp2024.ast.NodeUtils;
+import pt.up.fe.comp2024.symboltable.JmmSymbolTable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,21 +26,18 @@ public class Analysispasses extends AnalysisVisitor {
     }
 
     private Void visitImportDecl(JmmNode importDecl, SymbolTable table) {
-        if (importedClasses == null) {
-            importedClasses = new ArrayList<>();
-        }
         importedClasses.add(importDecl.get("names"));
         return null;
     }
 
     private Void visitType(JmmNode type, SymbolTable table) {
         String typeName = type.get("name");
-        if (!isBuiltInType(typeName) && (table.getClass().equals(typeName))) {
+        if (!isBuiltInType(typeName) && !importedClasses.contains(typeName) && !table.getClassName().equals(typeName)) {
             addReport(Report.newError(
                     Stage.SEMANTIC,
                     NodeUtils.getLine(type),
                     NodeUtils.getColumn(type),
-                    String.format("Class '%s' is used without being imported or defined.", typeName),
+                    String.format("Type '%s' is used without being imported or defined.", typeName),
                     null
             ));
         }
@@ -52,8 +50,10 @@ public class Analysispasses extends AnalysisVisitor {
 
     private Void visitMethodCall(JmmNode methodCall, SymbolTable table) {
         String methodName = methodCall.get("methodName");
-        String className = methodCall.get("className");
-        if (!isMethodInheritedOrImported(methodName, className, table)) {
+        JmmNode objectExpr = methodCall.getParent(); // Assuming parent is the expression before the method call.
+        String className = resolveClassName(objectExpr, table);
+
+        if (!isMethodAvailable(methodName, className, table)) {
             addReport(Report.newError(
                     Stage.SEMANTIC,
                     NodeUtils.getLine(methodCall),
@@ -65,16 +65,61 @@ public class Analysispasses extends AnalysisVisitor {
         return null;
     }
 
+    private boolean isMethodAvailable(String methodName, String className, SymbolTable table) {
+        // First, check if table is an instance of JmmSymbolTable
+        if (!(table instanceof JmmSymbolTable)) {
+            System.err.println("Symbol table is not compatible with JmmSymbolTable specific methods.");
+            return false;
+        }
 
-    private boolean isMethodInheritedOrImported(String methodName, String targetClassName, SymbolTable table) {
-        if (targetClassName == null || targetClassName.equals(table.getClassName())) {
-            return table.getMethods().contains(methodName);
-        } else if (targetClassName.equals(table.getSuper())) {
+        JmmSymbolTable jmmTable = (JmmSymbolTable) table;
+
+        // Check if the method exists in the class or any of its parent classes
+        if (jmmTable.hasMethod(className, methodName)) {
             return true;
-        } else {
-            return table.getImports().contains(targetClassName);
+        }
+
+        // Traverse parent classes
+        String parentClassName = jmmTable.getParentClassName(className);
+        while (parentClassName != null) {
+            if (jmmTable.hasMethod(parentClassName, methodName)) {
+                return true;
+            }
+            parentClassName = jmmTable.getParentClassName(parentClassName);
+        }
+
+        return false;
+    }
+
+    private String resolveClassName(JmmNode objectExpr, SymbolTable table) {
+        if (!(table instanceof JmmSymbolTable)) {
+            System.err.println("Symbol table is not compatible with JmmSymbolTable specific methods.");
+            return null;
+        }
+        JmmSymbolTable jmmTable = (JmmSymbolTable) table;
+
+        switch (objectExpr.getKind()) {
+            case "This":
+                return table.getClassName();
+            case "VarRefExpr":
+                String varName = objectExpr.get("name");
+                return jmmTable.getVariableType(varName, currentScope(objectExpr)).getName();
+            case "NewObject":
+                return objectExpr.get("name");
+            default:
+                return null;
         }
     }
+
+    private String currentScope(JmmNode node) {
+        // Traverse up the AST to find the nearest method or class scope.
+        while (node != null && !node.getKind().equals("Method") && !node.getKind().equals("Class")) {
+            node = node.getParent();
+        }
+        return node != null ? node.get("name") : "Global";  // Assume a global scope if no method or class is found.
+    }
+
+
 
     @Override
     public List<Report> analyze(JmmNode root, SymbolTable table) {

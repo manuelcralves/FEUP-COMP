@@ -9,6 +9,7 @@ import pt.up.fe.specs.util.exceptions.NotImplementedException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class JmmSymbolTable implements SymbolTable {
 
@@ -37,7 +38,9 @@ public class JmmSymbolTable implements SymbolTable {
     }
 
     @Override
-    public List<String> getImports() { return imports;}
+    public List<String> getImports() {
+        return imports;
+    }
 
     @Override
     public String getClassName() {
@@ -51,7 +54,7 @@ public class JmmSymbolTable implements SymbolTable {
 
     @Override
     public List<Symbol> getFields() {
-        return Collections.unmodifiableList(locals.get(className));
+        return Collections.unmodifiableList(locals.getOrDefault(className, Collections.emptyList()));
     }
 
     @Override
@@ -61,10 +64,8 @@ public class JmmSymbolTable implements SymbolTable {
 
     @Override
     public Type getReturnType(String methodSignature) {
-
         return returnTypes.get(methodSignature);
     }
-
 
     @Override
     public List<Symbol> getParameters(String methodSignature) {
@@ -73,7 +74,45 @@ public class JmmSymbolTable implements SymbolTable {
 
     @Override
     public List<Symbol> getLocalVariables(String methodSignature) {
-        return Collections.unmodifiableList(locals.get(methodSignature));
+        return Collections.unmodifiableList(locals.getOrDefault(methodSignature, Collections.emptyList()));
     }
 
+
+    public Type getVariableType(String variableName, String scope) {
+        // First check local variables in the given scope (method)
+        List<Symbol> localVariables = locals.get(scope);
+        if (localVariables != null) {
+            for (Symbol symbol : localVariables) {
+                if (symbol.getName().equals(variableName)) {
+                    return symbol.getType();
+                }
+            }
+        }
+
+        // Check global fields if not found in local scope
+        List<Symbol> fields = getFields();
+        for (Symbol field : fields) {
+            if (field.getName().equals(variableName)) {
+                return field.getType();
+            }
+        }
+
+        return null;  // Variable not found
+    }
+
+
+    public boolean hasMethod(String className, String methodName) {
+        if (this.className.equals(className)) {
+            return methods.contains(methodName);
+        }
+        return false;
+    }
+
+
+    public String getParentClassName(String className) {
+        if (this.className.equals(className)) {
+            return superClass;
+        }
+        return null;
+    }
 }

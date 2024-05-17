@@ -92,8 +92,8 @@ public class JasminGenerator {
 
     private String generateSingleOpCond(SingleOpCondInstruction singleOpCondInstruction) {
         StringBuilder code = new StringBuilder();
-        Element operand = singleOpCondInstruction.getOperands().getFirst();
-        code.append(generators.apply(operand));
+        //Element operand = singleOpCondInstruction.getOperands().getFirst();
+        //code.append(generators.apply(operand));
 
         // Assuming the condition is to check if the operand is zero
         code.append("ifeq LABEL_TRUE\n");
@@ -107,8 +107,8 @@ public class JasminGenerator {
 
     private String generateOpCond(OpCondInstruction opCondInstruction) {
         StringBuilder code = new StringBuilder();
-        code.append(generators.apply(opCondInstruction.getOperands().getFirst()));
-        code.append(generators.apply(opCondInstruction.getOperands().getLast()));
+        //code.append(generators.apply(opCondInstruction.getOperands().getFirst()));
+        //code.append(generators.apply(opCondInstruction.getOperands().getLast()));
 
         Operation operation = opCondInstruction.getCondition().getOperation();
         String jmpLabel = "LABEL_TRUE";
