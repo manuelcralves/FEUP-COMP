@@ -26,9 +26,14 @@ public class TypeUtils {
             case BINARY_EXPR -> getBinExprType(expr);
             case VAR_REF_EXPR -> getVarExprType(expr, table);
             case INTEGER_LITERAL -> new Type(INT_TYPE_NAME, false);
+            case METHOD_CALL_EXPR -> getMethodCallType(expr, table);
 
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
         };
+
+        if (type == null) {
+            System.err.println("Error: Type is null for expression " + expr);
+        }
 
         return type;
     }
@@ -65,4 +70,26 @@ public class TypeUtils {
         // Placeholder implementation, expand as needed
         return sourceType.getName().equals(destinationType.getName());
     }
+
+    /*private static Type getMethodCallType(JmmNode methodCallType, SymbolTable table) {
+        return table.getReturnType(methodCallType.get("methodName"));
+    }*/
+
+    private static Type getMethodCallType(JmmNode methodCallExpr, SymbolTable table) {
+        String methodName = methodCallExpr.get("methodName");
+
+        if (methodName.equals("println")) {
+            return new Type("void", false);
+        }
+
+        Type returnType = table.getReturnType(methodName);
+
+        if (returnType == null) {
+            System.err.println("Error: Return type is null for method " + methodName);
+        }
+
+        return returnType;
+    }
+
+
 }

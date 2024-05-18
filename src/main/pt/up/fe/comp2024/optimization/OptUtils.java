@@ -34,8 +34,12 @@ public class OptUtils {
     }
 
     public static String toOllirType(Type type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Type is null");
+        }
         return toOllirType(type.getName());
     }
+
 
     private static String toOllirType(String typeName) {
         String type = "." + switch (typeName) {

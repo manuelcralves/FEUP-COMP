@@ -7,6 +7,9 @@ import pt.up.fe.comp.jmm.ast.PreorderJmmVisitor;
 import pt.up.fe.comp2024.ast.Kind;
 import pt.up.fe.comp2024.ast.TypeUtils;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static pt.up.fe.comp2024.ast.Kind.*;
 
 /**
@@ -29,6 +32,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         addVisit(VAR_REF_EXPR, this::visitVarRef);
         addVisit(BINARY_EXPR, this::visitBinExpr);
         addVisit(INTEGER_LITERAL, this::visitInteger);
+        addVisit(METHOD_CALL_EXPR, this::visitMethodCallExpr);
         setDefaultVisit(this::defaultVisit);
     }
 
@@ -48,11 +52,9 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
         StringBuilder computation = new StringBuilder();
 
-        // code to compute the children
         computation.append(lhs.getComputation());
         computation.append(rhs.getComputation());
 
-        // code to compute self
         Type resType = TypeUtils.getExprType(node, table);
         String resOllirType = OptUtils.toOllirType(resType);
         String code = OptUtils.getTemp() + resOllirType;
@@ -78,6 +80,44 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         String code = id + ollirType;
 
         return new OllirExprResult(code);
+    }
+
+    private OllirExprResult visitMethodCallExpr(JmmNode node, Void unused) {
+        var classNode = node.getJmmChild(0);
+        var methodName = node.get("methodName");
+        StringBuilder code = new StringBuilder();
+        List<String> args = new ArrayList<>();
+
+        for (int i = 1; i < node.getChildren().size(); i++) {
+            args.add("," + visit(node.getChildren().get(i)).getCode());
+        }
+
+        String result = String.join("", args);
+        var type = TypeUtils.getExprType(node, table);
+
+        if (type == null) {
+            throw new RuntimeException("Type is null for method call expression: " + node);
+        }
+
+        var varType = OptUtils.toOllirType(type);
+
+        String invokeType = classNode.getOptional("name").isPresent() ? "invokestatic" : "invokevirtual";
+        code.append(invokeType);
+        code.append("(");
+        if (classNode.getOptional("name").isPresent()) {
+            code.append(classNode.getOptional("name").get());
+        } else {
+            code.append("this");
+        }
+        code.append(",\"");
+        code.append(methodName);
+        code.append("\"");
+        code.append(result);
+        code.append(")");
+        code.append(varType);
+        code.append(END_STMT);
+
+        return new OllirExprResult(code.toString());
     }
 
     /**
