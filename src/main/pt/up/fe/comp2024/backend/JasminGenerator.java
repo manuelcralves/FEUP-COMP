@@ -30,7 +30,7 @@ public class JasminGenerator {
     Method currentMethod;
 
     int limit_stack = 0;
-    int limit_method = 0;
+    int current_stack = 0;
     int limit_locals = 0;
     int conditionalAux = 0;
 
@@ -65,6 +65,7 @@ public class JasminGenerator {
         StringBuilder code = new StringBuilder();
         Element operand = unaryOpInstruction.getOperand();
         code.append(generators.apply(operand));
+        updateStackLimits(1); // Push the operand onto the stack
 
         Type type = operand.getType();
         switch (type.toString()) {
@@ -85,21 +86,17 @@ public class JasminGenerator {
             default:
                 throw new NotImplementedException("Unary operation not implemented for type: " + type);
         }
+        updateStackLimits(-1); // Adjust for the operation result
+
         return code.toString();
     }
-
-
 
     private String generateSingleOpCond(SingleOpCondInstruction singleOpCondInstruction) {
         StringBuilder code = new StringBuilder();
-        //Element operand = singleOpCondInstruction.getOperands().getFirst();
-        //code.append(generators.apply(operand));
-
-        // Assuming the condition is to check if the operand is zero
         code.append("ifeq LABEL_TRUE\n");
+        updateStackLimits(-1); // Adjust stack for conditional operation
         return code.toString();
     }
-
 
     private String generateGoto(GotoInstruction gotoInstruction) {
         return "goto " + gotoInstruction.getLabel() + NL;
@@ -107,9 +104,6 @@ public class JasminGenerator {
 
     private String generateOpCond(OpCondInstruction opCondInstruction) {
         StringBuilder code = new StringBuilder();
-        //code.append(generators.apply(opCondInstruction.getOperands().getFirst()));
-        //code.append(generators.apply(opCondInstruction.getOperands().getLast()));
-
         Operation operation = opCondInstruction.getCondition().getOperation();
         String jmpLabel = "LABEL_TRUE";
 
@@ -129,9 +123,10 @@ public class JasminGenerator {
             default:
                 throw new NotImplementedException("Operation not implemented: " + operation.getOpType());
         }
+        updateStackLimits(-2); // Adjust stack for conditional operation
+
         return code.toString();
     }
-
 
     public List<Report> getReports() {
         return reports;
@@ -147,14 +142,13 @@ public class JasminGenerator {
         return code;
     }
 
-
     private String generateClassUnit(ClassUnit classUnit) {
 
         var code = new StringBuilder();
 
         // generate class name
         var className = ollirResult.getOllirClass().getClassName();
-        code.append(".class ").append(className).append(NL).append(NL);
+        code.append(".class public ").append(className).append(NL).append(NL);
 
         var superName = ollirResult.getOllirClass().getSuperClass() != null ?
                 ollirResult.getOllirClass().getSuperClass() :
@@ -188,7 +182,6 @@ public class JasminGenerator {
         return code.toString();
     }
 
-
     private String generateMethod(Method method) {
 
         // set method
@@ -217,15 +210,18 @@ public class JasminGenerator {
                 .append("(").append(params).append(")").append(returnTypes).append(NL);
 
         // Add limits
-        code.append(TAB).append(".limit stack 99").append(NL);
-        code.append(TAB).append(".limit locals 99").append(NL);
+        limit_stack = 0;
+        current_stack = 0;
+        limit_locals = calculateLocalsLimit(method);
 
         for (var inst : method.getInstructions()) {
             var instCode = StringLines.getLines(generators.apply(inst)).stream()
                     .collect(Collectors.joining(NL + TAB, TAB, NL));
-
             code.append(instCode);
         }
+
+        code.insert(code.indexOf(NL) + 1, TAB + ".limit stack " + limit_stack + NL);
+        code.insert(code.indexOf(NL) + 1, TAB + ".limit locals " + limit_locals + NL);
 
         code.append(".end method\n");
 
@@ -233,6 +229,17 @@ public class JasminGenerator {
         currentMethod = null;
 
         return code.toString();
+    }
+
+    private int calculateLocalsLimit(Method method) {
+        Set<Integer> virtualRegisters = new TreeSet<>();
+        virtualRegisters.add(0);
+
+        for(Descriptor descriptor : method.getVarTable().values()) {
+            virtualRegisters.add(descriptor.getVirtualReg());
+        }
+
+        return virtualRegisters.size();
     }
 
     private String paramTypeToSignature(Type type) {
@@ -278,7 +285,10 @@ public class JasminGenerator {
         }
 
         // get register
-        var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
+        var reg = getVirtualReg(operand);
+        if (reg == -1) {
+            throw new NotImplementedException("Variable not found in variable table: " + operand.getName());
+        }
 
         if(operand instanceof ArrayOperand) {
             return code.append("iastore").append(NL).toString();
@@ -290,6 +300,8 @@ public class JasminGenerator {
         if (operation == null) {
             return "Error Storing!";
         }
+
+        updateStackLimits(-1); // Store operation pops value from stack
 
         return code.append(operation).append(" ").append(reg).append(NL).toString();
     }
@@ -306,12 +318,17 @@ public class JasminGenerator {
     }
 
     private String generateLiteral(LiteralElement literal) {
+        updateStackLimits(1); // ldc pushes value onto the stack
         return "ldc " + literal.getLiteral() + NL;
     }
 
     private String generateOperand(Operand operand) {
         // get register
-        var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
+        var reg = getVirtualReg(operand);
+        if (reg == -1) {
+            throw new NotImplementedException("Variable not found in variable table: " + operand.getName());
+        }
+        updateStackLimits(1); // iload pushes value onto the stack
         return "iload " + reg + NL;
     }
 
@@ -321,12 +338,14 @@ public class JasminGenerator {
         // Load values for the left and right operands onto the stack
         code.append(generators.apply(binaryOp.getLeftOperand()));
         code.append(generators.apply(binaryOp.getRightOperand()));
+        updateStackLimits(2); // Push two operands onto the stack
 
         // Get the operation code from the operation type
         String op = getOperation(binaryOp.getOperation());
 
         // Append the operation to the code
         code.append(op).append(NL);
+        updateStackLimits(-1); // Binary operation pops two operands and pushes one result
 
         // Handle boolean operations with specific control flow adjustments
         if (isBooleanOperation(binaryOp.getOperation())) {
@@ -340,6 +359,7 @@ public class JasminGenerator {
                     .append(labelNext).append(":\n");
 
             conditionalAux++;  // Ensure the label numbers are incremented to maintain uniqueness
+            updateStackLimits(1); // Adjust for the boolean operation result
         }
 
         return code.toString();
@@ -370,13 +390,13 @@ public class JasminGenerator {
         };
     }
 
-
     private String generateReturn(ReturnInstruction returnInst) {
         var code = new StringBuilder();
 
         if (returnInst.hasReturnValue()) {
             Element operand = returnInst.getOperand();
             code.append(generators.apply(operand));
+            updateStackLimits(1); // Push return value onto the stack
 
             var returnType = operand.getType().toString();
 
@@ -393,24 +413,26 @@ public class JasminGenerator {
             code.append("return").append(NL);
         }
 
+        updateStackLimits(-1); // Return operation pops the value from the stack
+
         return code.toString();
     }
 
     private static final Map<String, String> TYPE_DESCRIPTOR = Map.of(
-    "INT32", "I",
-    "BOOLEAN", "Z",
-    "FLOAT32", "F",
-    "DOUBLE64", "D",
-    "LONG64", "J",
-    "REFERENCE", "L",
-    "STRING[]", "[Ljava/lang/String;"
+            "INT32", "I",
+            "BOOLEAN", "Z",
+            "FLOAT32", "F",
+            "DOUBLE64", "D",
+            "LONG64", "J",
+            "REFERENCE", "L",
+            "STRING[]", "[Ljava/lang/String;"
     );
 
     private static final Map<String, String> TYPE_LOAD_INST = Map.of(
-        "INT32", "iload",
-        "BOOLEAN", "iload",
-        "FLOAT32", "fload",
-        "REFERENCE", "aload"
+            "INT32", "iload",
+            "BOOLEAN", "iload",
+            "FLOAT32", "fload",
+            "REFERENCE", "aload"
     );
 
     private String getTypeDescriptor(Type type) {
@@ -433,11 +455,14 @@ public class JasminGenerator {
         Operand object = getField.getObject();
         Operand field = getField.getField();
 
+        updateStackLimits(1); // aload pushes the object reference onto the stack
+        updateStackLimits(1); // getfield pushes the field value onto the stack
+
         return String.format("\taload %d\n\tgetfield %s/%s %s\n",
-                currentMethod.getVarTable().get(object.getName()).getVirtualReg(),
-            currentMethod.getOllirClass().getClassName().replace('.', '/'),
-            field.getName(),
-            getTypeDescriptor(field.getType())
+                getVirtualReg(object),
+                currentMethod.getOllirClass().getClassName().replace('.', '/'),
+                field.getName(),
+                getTypeDescriptor(field.getType())
         );
     }
 
@@ -449,41 +474,90 @@ public class JasminGenerator {
         String valueCode;
         if (value instanceof LiteralElement) {
             valueCode = "\tldc " + ((LiteralElement) value).getLiteral() + "\n";
+            updateStackLimits(1); // ldc pushes the value onto the stack
         } else if (value instanceof Operand) {
-            valueCode = String.format("\t%s %d\n", getLoadInstruction(value.getType()), currentMethod.getVarTable().get(((Operand) value).getName()).getVirtualReg());
+            valueCode = String.format("\t%s %d\n", getLoadInstruction(value.getType()), getVirtualReg((Operand) value));
+            updateStackLimits(1); // Load instruction pushes the value onto the stack
         } else {
             throw new NotImplementedException("Unsupported value type: " + value);
         }
 
+        updateStackLimits(2); // aload pushes the object reference and putfield pops both and pushes nothing
+
         return String.format("\taload %d\n%s\tputfield %s/%s %s\n",
-                currentMethod.getVarTable().get(object.getName()).getVirtualReg(),
-            valueCode,
-            currentMethod.getOllirClass().getClassName().replace('.', '/'),
-            field.getName(),
-            getTypeDescriptor(field.getType())
+                getVirtualReg(object),
+                valueCode,
+                currentMethod.getOllirClass().getClassName().replace('.', '/'),
+                field.getName(),
+                getTypeDescriptor(field.getType())
         );
     }
 
     private String generateCall(CallInstruction call) {
         StringBuilder code = new StringBuilder();
 
-        String type = call.getInvocationType().toString();
-        String operands = call.getOperands().toString().split(" ")[1].split("\\.")[0];
-        String name = Character.toUpperCase(operands.charAt(0)) + operands.substring(1);
+        // Load the arguments onto the stack
+        for (Element operand : call.getOperands()) {
+            code.append(generators.apply(operand));
+            updateStackLimits(1); // Each argument pushes a value onto the stack
+        }
 
-        if (type.equals("NEW")) {
-            code.append("new ").append(ollirResult.getOllirClass().getClassName()).append(NL).append("dup").append(NL);
-        } else {
-            code.append(type).append(" ").append(name).append("/<init>()V").append(NL);
+        String methodName = call.getMethodName().toString();
+        String className = call.getClass().getName().replace(".", "/");
+        String arguments = call.getOperands().stream()
+                .map(op -> paramTypeToSignature(op.getType()))
+                .collect(Collectors.joining());
+
+        switch (call.getInvocationType()) {
+            case invokestatic:
+                code.append("invokestatic ").append(className).append("/")
+                        .append(methodName).append("(").append(arguments).append(")")
+                        .append(returnTypeToSignature(call.getReturnType())).append(NL);
+                updateStackLimits(-call.getOperands().size()); // Pop all arguments
+                if (call.getReturnType().getTypeOfElement() != ElementType.VOID) {
+                    updateStackLimits(1); // Push the return value
+                }
+                break;
+            case invokevirtual:
+                code.append("invokevirtual ").append(className).append("/")
+                        .append(methodName).append("(").append(arguments).append(")")
+                        .append(returnTypeToSignature(call.getReturnType())).append(NL);
+                updateStackLimits(-call.getOperands().size() - 1); // Pop all arguments and object reference
+                if (call.getReturnType().getTypeOfElement() != ElementType.VOID) {
+                    updateStackLimits(1); // Push the return value
+                }
+                break;
+            case invokespecial:
+                code.append("invokespecial ").append(className).append("/")
+                        .append(methodName).append("(").append(arguments).append(")")
+                        .append(returnTypeToSignature(call.getReturnType())).append(NL);
+                updateStackLimits(-call.getOperands().size() - 1); // Pop all arguments and object reference
+                if (call.getReturnType().getTypeOfElement() != ElementType.VOID) {
+                    updateStackLimits(1); // Push the return value
+                }
+                break;
+            case NEW:
+                code.append("new ").append(className).append(NL)
+                        .append("dup").append(NL)
+                        .append("invokespecial ").append(className).append("/<init>()V").append(NL);
+                updateStackLimits(2); // new and dup push the object reference twice
+                break;
+            default:
+                throw new NotImplementedException("Unsupported invocation type: " + call.getInvocationType());
         }
 
         return code.toString();
     }
 
+    private int getVirtualReg(Operand operand) {
+        Descriptor descriptor = currentMethod.getVarTable().get(operand.getName());
+        return descriptor != null ? descriptor.getVirtualReg() : -1;
+    }
+
     private void updateStackLimits(int update) {
-        this.limit_method += update;
-        if(this.limit_method > this.limit_stack) {
-            this.limit_stack = this.limit_method;
+        this.current_stack += update;
+        if(this.current_stack > this.limit_stack) {
+            this.limit_stack = this.current_stack;
         }
     }
 
