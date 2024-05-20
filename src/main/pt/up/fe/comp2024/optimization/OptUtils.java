@@ -52,7 +52,7 @@ public class OptUtils {
             case "boolean" -> "bool";
             case "void", "IMPORTED_TYPE" -> "V";
             case "String" -> getTemp("String") + '.' + typeName;
-            default -> getTemp() + '.' + typeName;
+            default -> typeName;
         };
 
         return type;
