@@ -27,6 +27,7 @@ public class TypeUtils {
             case BINARY_EXPR -> getBinExprType(expr);
             case VAR_REF_EXPR -> getVarExprType(expr, table);
             case INTEGER_LITERAL -> new Type(INT_TYPE_NAME, false);
+            case BOOLEAN -> new Type("boolean", false);
             case METHOD_CALL_EXPR -> getMethodCallType(expr, table);
 
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
@@ -62,6 +63,7 @@ public class TypeUtils {
         // Placeholder implementation, expand as needed
         String methodName = varRefExpr.getAncestor(METHOD_DECL).map(method -> method.get("name")).orElseThrow();
         Type retType = table.getReturnType(methodName);
+
         for(int i = 0; i<table.getParameters(methodName).size(); i++) {
             if(table.getParameters(methodName).get(i).getName().equals(varRefExpr.get("name"))) {
                 System.out.println(" parametro:"+table.getParameters(methodName).get(i).getType().getName());
