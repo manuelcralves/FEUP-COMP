@@ -88,18 +88,12 @@ public class JasminGenerator {
         return code.toString();
     }
 
-
-
     private String generateSingleOpCond(SingleOpCondInstruction singleOpCondInstruction) {
         StringBuilder code = new StringBuilder();
-        //Element operand = singleOpCondInstruction.getOperands().getFirst();
-        //code.append(generators.apply(operand));
-
         // Assuming the condition is to check if the operand is zero
         code.append("ifeq LABEL_TRUE\n");
         return code.toString();
     }
-
 
     private String generateGoto(GotoInstruction gotoInstruction) {
         return "goto " + gotoInstruction.getLabel() + NL;
@@ -107,8 +101,6 @@ public class JasminGenerator {
 
     private String generateOpCond(OpCondInstruction opCondInstruction) {
         StringBuilder code = new StringBuilder();
-        //code.append(generators.apply(opCondInstruction.getOperands().getFirst()));
-        //code.append(generators.apply(opCondInstruction.getOperands().getLast()));
 
         Operation operation = opCondInstruction.getCondition().getOperation();
         String jmpLabel = "LABEL_TRUE";
@@ -132,27 +124,22 @@ public class JasminGenerator {
         return code.toString();
     }
 
-
     public List<Report> getReports() {
         return reports;
     }
 
     public String build() {
-
         // This way, build is idempotent
         if (code == null) {
             code = generators.apply(ollirResult.getOllirClass());
         }
-
         return code;
     }
 
-
     private String generateClassUnit(ClassUnit classUnit) {
-
         var code = new StringBuilder();
 
-        // generate class name
+        // Generate class name
         var className = ollirResult.getOllirClass().getClassName();
         code.append(".class ").append(className).append(NL).append(NL);
 
@@ -161,7 +148,7 @@ public class JasminGenerator {
                 "java/lang/Object";
         code.append(".super ").append(superName).append(NL).append(NL);
 
-        // generate a single constructor method
+        // Generate a single constructor method
         String defaultConstructor = String.format("""
         ; default constructor
         .method public <init>()V
@@ -172,9 +159,8 @@ public class JasminGenerator {
         """, superName);
         code.append(defaultConstructor).append(NL);
 
-        // generate code for all other methods
+        // Generate code for all other methods
         for (var method : ollirResult.getOllirClass().getMethods()) {
-
             // Ignore constructor, since there is always one constructor
             // that receives no arguments, and has been already added
             // previously
@@ -188,22 +174,20 @@ public class JasminGenerator {
         return code.toString();
     }
 
-
     private String generateMethod(Method method) {
-
-        // set method
+        // Set method
         currentMethod = method;
 
         var code = new StringBuilder();
 
-        // calculate modifier
+        // Calculate modifier
         var modifier = method.getMethodAccessModifier() != AccessModifier.DEFAULT ?
                 method.getMethodAccessModifier().name().toLowerCase() + " " :
                 "";
 
         var methodName = method.getMethodName();
 
-        if(methodName.equals("main")){
+        if (methodName.equals("main")) {
             modifier += "static ";
         }
 
@@ -216,20 +200,23 @@ public class JasminGenerator {
         code.append("\n.method ").append(modifier).append(method.getMethodName())
                 .append("(").append(params).append(")").append(returnTypes).append(NL);
 
+        // Calculate stack and local limits
+        limit_stack = calculateStackLimit(method);
+        limit_locals = calculateLocalLimit(method);
+
         // Add limits
-        code.append(TAB).append(".limit stack 99").append(NL);
-        code.append(TAB).append(".limit locals 99").append(NL);
+        code.append(TAB).append(".limit stack ").append(limit_stack).append(NL);
+        code.append(TAB).append(".limit locals ").append(limit_locals).append(NL);
 
         for (var inst : method.getInstructions()) {
             var instCode = StringLines.getLines(generators.apply(inst)).stream()
                     .collect(Collectors.joining(NL + TAB, TAB, NL));
-
             code.append(instCode);
         }
 
         code.append(".end method\n");
 
-        // unset method
+        // Unset method
         currentMethod = null;
 
         return code.toString();
@@ -267,20 +254,20 @@ public class JasminGenerator {
     private String generateAssign(AssignInstruction assign) {
         var code = new StringBuilder();
 
-        // generate code for loading what's on the right
+        // Generate code for loading what's on the right
         code.append(generators.apply(assign.getRhs()));
 
-        // store value in the stack in destination
+        // Store value in the stack in destination
         var lhs = assign.getDest();
 
         if (!(lhs instanceof Operand operand)) {
             throw new NotImplementedException(lhs.getClass());
         }
 
-        // get register
+        // Get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
 
-        if(operand instanceof ArrayOperand) {
+        if (operand instanceof ArrayOperand) {
             return code.append("iastore").append(NL).toString();
         }
 
@@ -310,7 +297,7 @@ public class JasminGenerator {
     }
 
     private String generateOperand(Operand operand) {
-        // get register
+        // Get register
         var reg = currentMethod.getVarTable().get(operand.getName()).getVirtualReg();
         return "iload " + reg + NL;
     }
@@ -370,7 +357,6 @@ public class JasminGenerator {
         };
     }
 
-
     private String generateReturn(ReturnInstruction returnInst) {
         var code = new StringBuilder();
 
@@ -397,20 +383,20 @@ public class JasminGenerator {
     }
 
     private static final Map<String, String> TYPE_DESCRIPTOR = Map.of(
-    "INT32", "I",
-    "BOOLEAN", "Z",
-    "FLOAT32", "F",
-    "DOUBLE64", "D",
-    "LONG64", "J",
-    "REFERENCE", "L",
-    "STRING[]", "[Ljava/lang/String;"
+            "INT32", "I",
+            "BOOLEAN", "Z",
+            "FLOAT32", "F",
+            "DOUBLE64", "D",
+            "LONG64", "J",
+            "REFERENCE", "L",
+            "STRING[]", "[Ljava/lang/String;"
     );
 
     private static final Map<String, String> TYPE_LOAD_INST = Map.of(
-        "INT32", "iload",
-        "BOOLEAN", "iload",
-        "FLOAT32", "fload",
-        "REFERENCE", "aload"
+            "INT32", "iload",
+            "BOOLEAN", "iload",
+            "FLOAT32", "fload",
+            "REFERENCE", "aload"
     );
 
     private String getTypeDescriptor(Type type) {
@@ -435,9 +421,9 @@ public class JasminGenerator {
 
         return String.format("\taload %d\n\tgetfield %s/%s %s\n",
                 currentMethod.getVarTable().get(object.getName()).getVirtualReg(),
-            currentMethod.getOllirClass().getClassName().replace('.', '/'),
-            field.getName(),
-            getTypeDescriptor(field.getType())
+                currentMethod.getOllirClass().getClassName().replace('.', '/'),
+                field.getName(),
+                getTypeDescriptor(field.getType())
         );
     }
 
@@ -457,10 +443,10 @@ public class JasminGenerator {
 
         return String.format("\taload %d\n%s\tputfield %s/%s %s\n",
                 currentMethod.getVarTable().get(object.getName()).getVirtualReg(),
-            valueCode,
-            currentMethod.getOllirClass().getClassName().replace('.', '/'),
-            field.getName(),
-            getTypeDescriptor(field.getType())
+                valueCode,
+                currentMethod.getOllirClass().getClassName().replace('.', '/'),
+                field.getName(),
+                getTypeDescriptor(field.getType())
         );
     }
 
@@ -485,6 +471,16 @@ public class JasminGenerator {
         if(this.limit_method > this.limit_stack) {
             this.limit_stack = this.limit_method;
         }
+    }
+
+    private int calculateLocalLimit(Method method) {
+        return method.getVarTable().values().stream()
+                .mapToInt(Descriptor::getVirtualReg)
+                .max().orElse(0) + 1;
+    }
+
+    private int calculateStackLimit(Method method) {
+        return 99; // Placeholder
     }
 
     public static int getLocalLimits(Method method) {
