@@ -4,6 +4,7 @@ import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import static pt.up.fe.comp2024.ast.Kind.METHOD_DECL;
+import static pt.up.fe.comp2024.ast.Kind.NOT;
 
 public class TypeUtils {
 
@@ -29,6 +30,8 @@ public class TypeUtils {
             case INTEGER_LITERAL -> new Type(INT_TYPE_NAME, false);
             case BOOLEAN -> new Type("boolean", false);
             case METHOD_CALL_EXPR -> getMethodCallType(expr, table);
+            case NOT -> getVarExprType(expr, table);
+            case ARRAY -> getVarExprType(expr.getChild(0), table);
 
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
         };
@@ -64,12 +67,17 @@ public class TypeUtils {
         String methodName = varRefExpr.getAncestor(METHOD_DECL).map(method -> method.get("name")).orElseThrow();
         Type retType = table.getReturnType(methodName);
 
-        for(int i = 0; i<table.getParameters(methodName).size(); i++) {
+        for (int i = 0; i<table.getParameters(methodName).size(); i++) {
+
             if(table.getParameters(methodName).get(i).getName().equals(varRefExpr.get("name"))) {
-                System.out.println(" parametro:"+table.getParameters(methodName).get(i).getType().getName());
                 retType = table.getParameters(methodName).get(i).getType();
             }
         }
+
+        if (varRefExpr.getKind().equals(NOT)) {
+            return new Type("boolean", false);
+        }
+
         if (retType.getName().equals("boolean")) {
             return new Type("boolean", false);
         }
@@ -87,10 +95,6 @@ public class TypeUtils {
         // Placeholder implementation, expand as needed
         return sourceType.getName().equals(destinationType.getName());
     }
-
-    /*private static Type getMethodCallType(JmmNode methodCallType, SymbolTable table) {
-        return table.getReturnType(methodCallType.get("methodName"));
-    }*/
 
     private static Type getMethodCallType(JmmNode methodCallExpr, SymbolTable table) {
         String methodName = methodCallExpr.get("methodName");

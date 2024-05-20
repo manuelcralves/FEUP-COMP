@@ -19,14 +19,17 @@ public enum Kind {
     BINARY_OP,
     BOOLEAN,
     ASSIGN_STMT,
+    NOT,
+    ASSiGN_ARRAY,
+    NEW_OBJECT,
     RETURN_STMT,
     ARRAY,
     BINARY_EXPR,
     INTEGER_LITERAL,
     VAR_REF_EXPR;
 
-    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT, EXPRESSION);
-    private static final Set<Kind> EXPRESSIONS = Set.of(BINARY_EXPR, INTEGER_LITERAL, VAR_REF_EXPR, BOOLEAN);
+    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT, EXPRESSION, ASSiGN_ARRAY);
+    private static final Set<Kind> EXPRESSIONS = Set.of(BINARY_EXPR, INTEGER_LITERAL, VAR_REF_EXPR, BOOLEAN, NEW_OBJECT, NOT);
     private final String name;
 
     private Kind(String name) {
