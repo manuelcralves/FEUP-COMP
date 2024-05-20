@@ -3,6 +3,7 @@ package pt.up.fe.comp2024.ast;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
+import static pt.up.fe.comp2024.ast.Kind.METHOD_DECL;
 
 public class TypeUtils {
 
@@ -43,11 +44,14 @@ public class TypeUtils {
 
         switch (operator) {
             case "+":
+            case "-":
+            case "/":
             case "*":
                 return new Type(INT_TYPE_NAME, false);
             case "=":
-                // Array initialization expression
                 return new Type("int[]", true);
+            case ">", "<", "&&", "||":
+                return new Type("boolean", false);
             default:
                 throw new RuntimeException("Unknown operator '" + operator + "' of expression '" + binaryExpr + "'");
         }
@@ -56,6 +60,17 @@ public class TypeUtils {
 
     private static Type getVarExprType(JmmNode varRefExpr, SymbolTable table) {
         // Placeholder implementation, expand as needed
+        String methodName = varRefExpr.getAncestor(METHOD_DECL).map(method -> method.get("name")).orElseThrow();
+        Type retType = table.getReturnType(methodName);
+        for(int i = 0; i<table.getParameters(methodName).size(); i++) {
+            if(table.getParameters(methodName).get(i).getName().equals(varRefExpr.get("name"))) {
+                System.out.println(" parametro:"+table.getParameters(methodName).get(i).getType().getName());
+                retType = table.getParameters(methodName).get(i).getType();
+            }
+        }
+        if (retType.getName().equals("boolean")) {
+            return new Type("boolean", false);
+        }
         return new Type(INT_TYPE_NAME, false);
     }
 

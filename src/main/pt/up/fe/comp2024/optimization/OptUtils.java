@@ -34,8 +34,13 @@ public class OptUtils {
     }
 
     public static String toOllirType(Type type) {
+        StringBuilder code = new StringBuilder();
+
         if (type == null) {
             throw new IllegalArgumentException("Type is null");
+        }
+        if (type.isArray()) {
+            code.append(".array");
         }
         return toOllirType(type.getName());
     }

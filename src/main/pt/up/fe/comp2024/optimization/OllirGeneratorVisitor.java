@@ -54,6 +54,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         addVisit(EXPRESSION, this::visitExprStmt);
         addVisit(PARAM, this::visitParam);
         addVisit(RETURN_STMT, this::visitReturn);
+        addVisit("Main", this::visitMain);
         addVisit("Assign", this::visitAssignStmt);
 
         setDefaultVisit(this::defaultVisit);
@@ -147,9 +148,14 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         StringBuilder code = new StringBuilder(".method ");
 
         boolean isPublic = NodeUtils.getBooleanAttribute(node, "isPublic", "false");
+        boolean isStatic = NodeUtils.getBooleanAttribute(node, "isStatic", "false");
 
         if (isPublic) {
             code.append("public ");
+        }
+
+        if (isStatic) {
+            code.append("static ");
         }
 
         // name
@@ -297,6 +303,39 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     private String visitExprStmt(JmmNode node, Void unused) {
         OllirExprResult a = exprVisitor.visit(node.getJmmChild(0));
         return a.getComputation() + NL + a.getCode();
+    }
+
+    private String visitMain(JmmNode node, Void unused) {
+        StringBuilder code = new StringBuilder(".method ");
+
+        boolean isPublic = NodeUtils.getBooleanAttribute(node, "isPublic", "false");
+
+        if (isPublic) {
+            code.append("public ");
+        }
+
+        code.append("static ");
+
+        // name
+        code.append(node.get("name"));
+
+        code.append("(").append("args.array.String).V");
+
+        code.append(SPACE);
+        code.append(L_BRACKET);
+
+        int param = 0;
+        for (int i = param; i < node.getNumChildren(); i++) {
+            var child = node.getJmmChild(i);
+            var childCode = visit(child);
+            code.append(childCode);
+        }
+
+        code.append("ret.V");
+        code.append(END_STMT);
+        code.append(R_BRACKET);
+
+        return code.toString();
     }
 
     private String visitProgram(JmmNode node, Void unused) {

@@ -19,6 +19,7 @@ public enum Kind {
     BINARY_OP,
     ASSIGN_STMT,
     RETURN_STMT,
+    ARRAY,
     BINARY_EXPR,
     INTEGER_LITERAL,
     VAR_REF_EXPR;
