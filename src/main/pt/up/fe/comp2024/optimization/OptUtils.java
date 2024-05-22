@@ -39,10 +39,12 @@ public class OptUtils {
         if (type == null) {
             throw new IllegalArgumentException("Type is null");
         }
+
         if (type.isArray()) {
             code.append(".array");
         }
-        return toOllirType(type.getName());
+        code.append(toOllirType(type.getName()));
+        return code.toString();
     }
 
 

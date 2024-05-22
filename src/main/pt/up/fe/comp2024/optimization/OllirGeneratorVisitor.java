@@ -389,7 +389,6 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         for (var child : node.getChildren()) {
             visit(child);
         }
-
         return "";
     }
 }

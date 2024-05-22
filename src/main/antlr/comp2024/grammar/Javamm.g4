@@ -112,7 +112,7 @@ expr
     | expr LSQUARE expr RSQUARE #Array
     | expr DOT LENGTH #Length
     | expr DOT methodName=ID LPAREN ( expr ( COLON expr )* )? RPAREN #MethodCallExpr
-    | LSQUARE (expr (COLON expr)*)? RSQUARE #NewArrayInt
+    | LSQUARE (expr (COLON expr)*)? RSQUARE #ArrayInit
     | NEW INT LSQUARE expr RSQUARE #NewArrayInt
     | NEW ID LPAREN RPAREN #NewObject
     | expr op=(MUL|DIV) expr #BinaryExpr

@@ -3,8 +3,8 @@ package pt.up.fe.comp2024.ast;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
-import static pt.up.fe.comp2024.ast.Kind.METHOD_DECL;
-import static pt.up.fe.comp2024.ast.Kind.NOT;
+
+import static pt.up.fe.comp2024.ast.Kind.*;
 
 public class TypeUtils {
 
@@ -33,6 +33,8 @@ public class TypeUtils {
             case NOT -> getVarExprType(expr, table);
             case ARRAY -> getVarExprType(expr.getChild(0), table);
             case NEW_OBJECT -> new Type(table.getClassName(), false);
+            case NEW_ARRAY_INT -> new Type("int", true);
+            case ARRAY_INIT -> new Type("int", true);
 
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
         };
@@ -82,6 +84,7 @@ public class TypeUtils {
         if (retType.getName().equals("boolean")) {
             return new Type("boolean", false);
         }
+
         return new Type(INT_TYPE_NAME, false);
     }
 
