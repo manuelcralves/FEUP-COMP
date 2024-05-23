@@ -72,7 +72,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         String resOllirType = OptUtils.toOllirType(resType);
         String code = OptUtils.getTemp() + resOllirType;
 
-        if (!(node.getParent().getKind().equals("IfElse"))) {
+        if (!(node.getParent().getKind().equals("IfElse")) && !(node.getParent().getKind().equals("While"))) {
             computation.append(code).append(SPACE)
                     .append(ASSIGN).append(resOllirType).append(SPACE);
         }
@@ -81,7 +81,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
         Type type = TypeUtils.getExprType(node, table);
 
-        if (!(node.getParent().getKind().equals("IfElse"))) {
+        if (!(node.getParent().getKind().equals("IfElse")) && !(node.getParent().getKind().equals("While"))) {
             computation.append(node.get("op")).append(OptUtils.toOllirType(type)).append(SPACE)
                     .append(rhs.getCode()).append(END_STMT);
         }

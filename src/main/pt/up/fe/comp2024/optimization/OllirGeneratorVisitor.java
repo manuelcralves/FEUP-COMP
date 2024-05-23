@@ -31,7 +31,9 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     private final String NL = "\n";
     private final String L_BRACKET = " {\n";
     private final String R_BRACKET = "}\n";
-    private Integer INT = -1;
+    private Integer INTI = -1;
+
+    private Integer INTW = -1;
 
     private final SymbolTable table;
 
@@ -59,6 +61,7 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         addVisit("Assign", this::visitAssignStmt);
         addVisit(IF_ELSE, this::visitIfElse);
         addVisit(BLOCK, this::visitBlock);
+        addVisit(WHILE, this::visitWhile);
 
         setDefaultVisit(this::defaultVisit);
     }
@@ -384,8 +387,8 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         StringBuilder code = new StringBuilder();
         var lhs = exprVisitor.visit(node.getJmmChild(0));
-        Integer i = INT;
-        this.INT = i++;
+        Integer i = INTI;
+        this.INTI = i++;
 
         if (lhs.getComputation().isEmpty()) {
             code.append("if(").append(lhs.getCode()).append(")").append(SPACE).append("goto").append(SPACE).append("if_").append(i);
@@ -396,6 +399,25 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         code.append(END_STMT);
         code.append(visit(node.getJmmChild(2)));
         code.append("goto endif_").append(i);
+        code.append(END_STMT);
+        return code.toString();
+    }
+
+    private String visitWhile(JmmNode node, Void unused) {
+        StringBuilder code = new StringBuilder();
+        var lhs = exprVisitor.visit(node.getJmmChild(0));
+        Integer w = INTW;
+        this.INTW = w++;
+
+        if (lhs.getComputation().isEmpty()) {
+            code.append("if(").append(lhs.getCode()).append(")").append(SPACE).append("goto").append(SPACE).append("whilebody_").append(w);
+        }
+        else {
+            code.append("if(").append(lhs.getComputation()).append(")").append(SPACE).append("goto").append(SPACE).append("whilebody_").append(w);
+        }
+        code.append(END_STMT);
+        code.append(visit(node.getJmmChild(1)));
+        code.append("goto endwhile_").append(w);
         code.append(END_STMT);
         return code.toString();
     }
