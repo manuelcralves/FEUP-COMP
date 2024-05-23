@@ -393,13 +393,20 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         if (lhs.getComputation().isEmpty()) {
             code.append("if(").append(lhs.getCode()).append(")").append(SPACE).append("goto").append(SPACE).append("if_").append(i);
         }
+
         else {
             code.append("if(").append(lhs.getComputation()).append(")").append(SPACE).append("goto").append(SPACE).append("if_").append(i);
         }
+
         code.append(END_STMT);
         code.append(visit(node.getJmmChild(2)));
         code.append("goto endif_").append(i);
         code.append(END_STMT);
+        code.append("if_").append(i);
+        code.append(":").append(NL);
+        code.append(visit(node.getJmmChild(1)));
+        code.append("endif_").append(i).append(":").append(NL);
+
         return code.toString();
     }
 
@@ -412,12 +419,26 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         if (lhs.getComputation().isEmpty()) {
             code.append("if(").append(lhs.getCode()).append(")").append(SPACE).append("goto").append(SPACE).append("whilebody_").append(w);
         }
+
         else {
             code.append("if(").append(lhs.getComputation()).append(")").append(SPACE).append("goto").append(SPACE).append("whilebody_").append(w);
         }
+
         code.append(END_STMT);
-        code.append(visit(node.getJmmChild(1)));
         code.append("goto endwhile_").append(w);
+        code.append(END_STMT);
+        code.append("whilebody_").append(w).append(":");
+        code.append(NL);
+        code.append(visit(node.getJmmChild(1)));
+
+        if (lhs.getComputation().isEmpty()) {
+            code.append("if(").append(lhs.getCode()).append(")").append(SPACE).append("goto").append(SPACE).append("whilebody_").append(w);
+        }
+
+        else {
+            code.append("if(").append(lhs.getComputation()).append(")").append(SPACE).append("goto").append(SPACE).append("whilebody_").append(w);
+        }
+
         code.append(END_STMT);
         return code.toString();
     }
