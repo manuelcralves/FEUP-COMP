@@ -86,8 +86,8 @@ parameter
     : type name=ID #Parameters
     ;
 
-methodDecl locals [boolean isPublic=false]
-    : (access=PUBLIC {$isPublic=true;})? type name=ID LPAREN ( parameter ( COLON parameter )* )? RPAREN LCURLY varDecl* stmt* ret #Method
+methodDecl locals [boolean isPublic=false, boolean isStatic=false]
+    : (access=PUBLIC {$isPublic=true;})? (STATIC {$isStatic=true;})? type name=ID LPAREN ( parameter ( COLON parameter )* )? RPAREN LCURLY varDecl* stmt* ret #Method
     | (access=PUBLIC {$isPublic=true;})? STATIC VOID name=MAIN LPAREN type LSQUARE RSQUARE args=ID RPAREN LCURLY varDecl* stmt* RCURLY #Main
     ;
 
@@ -111,8 +111,8 @@ expr
     | NOT expr #Not
     | expr LSQUARE expr RSQUARE #Array
     | expr DOT LENGTH #Length
-    | expr DOT methodName=ID LPAREN ( expr ( COLON expr )* )? RPAREN #CallMethod
-    | LSQUARE (expr (COLON expr)*)? RSQUARE #NewArrayInt
+    | expr DOT methodName=ID LPAREN ( expr ( COLON expr )* )? RPAREN #MethodCallExpr
+    | LSQUARE (expr (COLON expr)*)? RSQUARE #ArrayInit
     | NEW INT LSQUARE expr RSQUARE #NewArrayInt
     | NEW ID LPAREN RPAREN #NewObject
     | expr op=(MUL|DIV) expr #BinaryExpr

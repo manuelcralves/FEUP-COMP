@@ -34,8 +34,19 @@ public class OptUtils {
     }
 
     public static String toOllirType(Type type) {
-        return toOllirType(type.getName());
+        StringBuilder code = new StringBuilder();
+
+        if (type == null) {
+            throw new IllegalArgumentException("Type is null");
+        }
+
+        if (type.isArray()) {
+            code.append(".array");
+        }
+        code.append(toOllirType(type.getName()));
+        return code.toString();
     }
+
 
     private static String toOllirType(String typeName) {
         String type = "." + switch (typeName) {
@@ -43,7 +54,7 @@ public class OptUtils {
             case "boolean" -> "bool";
             case "void", "IMPORTED_TYPE" -> "V";
             case "String" -> getTemp("String") + '.' + typeName;
-            default -> getTemp() + '.' + typeName;
+            default -> typeName;
         };
 
         return type;

@@ -17,20 +17,26 @@ public enum Kind {
     METHOD_DECL,
     PARAM,
     METHOD_CALL_EXPR,
-    EXPR_STMT,
+    EXPRESSION,
     BINARY_OP,
+    BOOLEAN,
     ASSIGN_STMT,
-    RETURN_STMT,
     NEW_ARRAY_INT,
+    ARRAY_INIT,
+    NOT,
+    ASSiGN_ARRAY,
+    NEW_OBJECT,
+    RETURN_STMT,
     RETURN,
     NEW_ARRAY,
+    ARRAY,
     BINARY_EXPR,
     INTEGER_LITERAL,
     VAR_REF_EXPR;
 
 
-    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT, EXPR_STMT);
     private static final Set<Kind> EXPRESSIONS = Set.of(BINARY_EXPR, INTEGER_LITERAL, VAR_REF_EXPR);
+    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT, EXPRESSION, ASSiGN_ARRAY);
     private final String name;
 
     private Kind(String name) {
