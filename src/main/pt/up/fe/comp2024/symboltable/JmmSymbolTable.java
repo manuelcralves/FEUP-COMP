@@ -6,10 +6,7 @@ import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp2024.ast.TypeUtils;
 import pt.up.fe.specs.util.exceptions.NotImplementedException;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class JmmSymbolTable implements SymbolTable {
 
@@ -115,4 +112,12 @@ public class JmmSymbolTable implements SymbolTable {
         }
         return null;
     }
+
+    public void addLocalVariable(String method, String name, String type) {
+        boolean isArray = type.endsWith("[]");
+        Symbol newLocal = new Symbol(new Type(type.replace("[]", ""), isArray), name);
+        locals.computeIfAbsent(method, k -> new ArrayList<>()).add(newLocal);
+    }
+
+
 }
