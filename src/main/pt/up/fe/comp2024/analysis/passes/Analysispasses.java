@@ -73,17 +73,28 @@ public class Analysispasses extends AnalysisVisitor {
     }
 
     private boolean isSubtype(String subtype, String supertype, SymbolTable table) {
-        // Implement logic to determine if 'subtype' is a subclass of 'supertype'
-        // This would likely involve checking the class hierarchy maintained in the symbol table
+        // Direct match or basic types check
+        if (subtype.equals(supertype) || isBuiltInType(subtype) && isBuiltInType(supertype)) {
+            return true;
+        }
+
+        // Check if the subtype is a class that extends the supertype
         String currentSuper = subtype;
         while (currentSuper != null && !currentSuper.isEmpty()) {
             if (currentSuper.equals(supertype)) {
                 return true;
             }
-            currentSuper = ((JmmSymbolTable)table).getParentClassName(currentSuper);
+            currentSuper = ((JmmSymbolTable) table).getParentClassName(currentSuper);
         }
+
+        // Check if the supertype is an imported class
+        if (importedClasses.contains(supertype) && importedClasses.contains(subtype)) {
+            return true;
+        }
+
         return false;
     }
+
 
     private Void visitReturn(JmmNode returnNode, SymbolTable table) {
         System.out.println("Visiting return statement: " + returnNode);
@@ -302,12 +313,14 @@ public class Analysispasses extends AnalysisVisitor {
                 break;
             case "VarRefExpr":
                 String varName = node.get("name");
+                System.out.println("Resolving type for variable: " + varName);
                 // Check if the variable type is already remembered
                 if (variableTypes.containsKey(varName)) {
                     resolvedType = variableTypes.get(varName);
                 } else {
                     resolvedType = findVariableType(varName, node, table);
                 }
+                System.out.println("Resolved type for variable " + varName + ": " + resolvedType);
                 break;
             case "NewObject":
                 System.out.println("Attributes of NewObject node: " + node.getAttributes());
@@ -323,6 +336,7 @@ public class Analysispasses extends AnalysisVisitor {
         }
         return resolvedType;
     }
+
 
 
 
@@ -412,6 +426,8 @@ public class Analysispasses extends AnalysisVisitor {
         System.out.println("Variable not found: " + varName);
         return "unknown";
     }
+
+
 
 
     private String findClassFieldType(String varName, SymbolTable table) {
