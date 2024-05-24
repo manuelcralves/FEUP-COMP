@@ -32,7 +32,7 @@ public class TypeUtils {
             case METHOD_CALL_EXPR -> getMethodCallType(expr, table);
             case NOT -> getVarExprType(expr, table);
             case ARRAY -> getVarExprType(expr.getChild(0), table);
-            case NEW_OBJECT -> new Type(table.getClassName(), false);
+            case NEW_OBJECT -> getNewObjectType(expr, table);
             case NEW_ARRAY_INT -> new Type("int", true);
             case ARRAY_INIT -> new Type("int", true);
 
@@ -87,7 +87,14 @@ public class TypeUtils {
 
         return new Type(INT_TYPE_NAME, false);
     }
-
+    private static Type getNewObjectType(JmmNode newObjectExpr, SymbolTable table) {
+        if (newObjectExpr.hasAttribute("className")) {
+            return new Type(newObjectExpr.get("className"), false);
+        } else {
+            System.err.println("NewObject node does not have a 'className' attribute.");
+            return new Type("unknown", false);
+        }
+    }
     /**
      * Checks if sourceType can be assigned to destinationType.
      *

@@ -23,24 +23,39 @@ public class JmmSymbolTableBuilder {
 
     private static Map<String, Type> buildReturnTypes(JmmNode classDecl) {
         Map<String, Type> map = new HashMap<>();
-        classDecl.getChildren(METHOD_DECL).forEach(method -> map.put(method.get("name"), new Type(method.getChildren(TYPE).get(0).get("name"), Boolean.parseBoolean(method.getChildren(TYPE).get(0).getOptional("isArray").orElse("false")))));
+        classDecl.getChildren(METHOD_DECL).forEach(method -> {
+            if (method.get("name").equals("main")) {
+                map.put("main", new Type("void", false));
+            } else {
+                map.put(method.get("name"), new Type(method.getChildren(TYPE).get(0).get("name"), Boolean.parseBoolean(method.getChildren(TYPE).get(0).getOptional("isArray").orElse("false"))));
+            }
+        });
         return map;
     }
+
 
     private static Map<String, List<Symbol>> buildParams(JmmNode classDecl) {
         Map<String, List<Symbol>> map = new HashMap<>();
         classDecl.getChildren(METHOD_DECL).forEach(method -> {
             List<Symbol> paramsList = new ArrayList<>();
-            for (JmmNode paramNode : method.getChildren("Parameters")) {
-                String type = paramNode.getChild(0).get("name");
-                boolean isArray = paramNode.getOptional("isArray").orElse("false").equals("true");
-                String parameter = paramNode.get("name");
+            if (method.get("name").equals("main")) {
+                String type = method.getChild(0).get("name");
+                boolean isArray = true; // Since main method parameter is String[]
+                String parameter = method.get("args");
                 paramsList.add(new Symbol(new Type(type, isArray), parameter));
+            } else {
+                for (JmmNode paramNode : method.getChildren("Parameters")) {
+                    String type = paramNode.getChild(0).get("name");
+                    boolean isArray = paramNode.getOptional("isArray").orElse("false").equals("true");
+                    String parameter = paramNode.get("name");
+                    paramsList.add(new Symbol(new Type(type, isArray), parameter));
+                }
             }
             map.put(method.get("name"), paramsList);
         });
         return map;
     }
+
 
     private static Map<String, List<Symbol>> buildLocals(JmmNode classDecl) {
         Map<String, List<Symbol>> map = new HashMap<>();

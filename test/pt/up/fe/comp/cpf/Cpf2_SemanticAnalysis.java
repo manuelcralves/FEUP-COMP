@@ -44,7 +44,7 @@ public class Cpf2_SemanticAnalysis {
 
     @Test
     public void section1_SymbolTable_Fields() {
-        var semantics = test("symboltable/MethodsAndFields.jmm", false);
+        var semantics =     test("symboltable/MethodsAndFields.jmm", false);
         var st = semantics.getSymbolTable();
         var fields = st.getFields();
         assertEquals(3, fields.size());

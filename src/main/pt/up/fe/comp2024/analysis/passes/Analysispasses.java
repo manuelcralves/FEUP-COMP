@@ -9,13 +9,12 @@ import pt.up.fe.comp2024.ast.Kind;
 import pt.up.fe.comp2024.ast.NodeUtils;
 import pt.up.fe.comp2024.symboltable.JmmSymbolTable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class Analysispasses extends AnalysisVisitor {
 
     private List<String> importedClasses;
+    private Map<String, String> variableTypes = new HashMap<>();
 
     @Override
     public void buildVisitor() {
@@ -31,22 +30,18 @@ public class Analysispasses extends AnalysisVisitor {
         setDefaultVisit(this::visitAllNodes);
     }
     private Void visitAssign(JmmNode assignNode, SymbolTable table) {
-        System.out.println("Visiting assignment: " + assignNode);
-
         String varName = assignNode.get("varName");
         JmmNode exprNode = assignNode.getChildren().get(0);
 
         String varType = findVariableType(varName, assignNode, table);
         String exprType = resolveType(exprNode, table);
 
-        System.out.println("Variable type: " + varType + ", Expression type: " + exprType);
-
         if (varType.equals("unknown") || exprType.equals("unknown")) {
             addReport(Report.newError(
                     Stage.SEMANTIC,
                     NodeUtils.getLine(assignNode),
                     NodeUtils.getColumn(assignNode),
-                    "Cannot resolve type for variable or expression.",
+                    "Cannot resolve type for variable or expression: Variable " + varName + " or Expression " + exprType,
                     null
             ));
         } else if (!typesAreCompatible(varType, exprType, table)) {
@@ -54,13 +49,15 @@ public class Analysispasses extends AnalysisVisitor {
                     Stage.SEMANTIC,
                     NodeUtils.getLine(assignNode),
                     NodeUtils.getColumn(assignNode),
-                    "Type mismatch: cannot assign " + exprType + " to " + varType,
+                    "Type mismatch: cannot assign type " + exprType + " to type " + varType,
                     null
             ));
         }
 
         return null;
     }
+
+
 
 
 
@@ -169,6 +166,9 @@ public class Analysispasses extends AnalysisVisitor {
             jmmTable.addLocalVariable(currentScope(varDecl), varName, varType);
         }
 
+        // Remember the variable type
+        variableTypes.put(varName, varType);
+
         return null;
     }
 
@@ -176,24 +176,38 @@ public class Analysispasses extends AnalysisVisitor {
         System.out.println("Visiting node kind: " + node.getKind());
         return null;
     }
-
     private Void visitImportDecl(JmmNode importDecl, SymbolTable table) {
+        // Collecting full import name correctly
         String fullImportName = String.join(".", importDecl.get("names"));
+        // Adding to importedClasses if not already present
+        fullImportName = fullImportName.replaceAll("^\\[|\\]$", "");
         if (!importedClasses.contains(fullImportName)) {
             importedClasses.add(fullImportName);
         }
+        // Debug output to show current state of imported classes
         System.out.println("Import registered: " + fullImportName);
-        System.out.println("Current imports: " + importedClasses); // Added to print current imports after each registration
+        System.out.println("Current imports: " + Arrays.toString(importedClasses.toArray()));
         return null;
     }
 
 
 
+    private boolean isTypeValid(String typeName, SymbolTable table) {
+        // Check if the type is one of the basic types
+        boolean isBasicType = Arrays.asList("int", "boolean", "String", "void").contains(typeName);
 
+        // Check if the type is the name of the class being compiled
+        boolean isCurrentClass = typeName.equals(((JmmSymbolTable)table).getClassName());
+        System.out.println(importedClasses);
+        // Check if the type is in the list of imported classes
+        boolean isImported = importedClasses.contains(typeName);
 
-    private boolean isTypeValid(String type, SymbolTable table) {
-        return isBuiltInType(type) || importedClasses.contains(type) || type.equals(table.getClassName());
+        return isBasicType || isCurrentClass || isImported;
     }
+
+
+
+
 
 
 
@@ -203,14 +217,8 @@ public class Analysispasses extends AnalysisVisitor {
         boolean isArray = type.getOptional("isArray").map(Boolean::parseBoolean).orElse(false);
         String fullTypeName = isArray ? typeName + "[]" : typeName;
 
-        // Debug: Print out current state of imports
-        System.out.println("Current imports: " + importedClasses);
-
-        // Check against imported classes and built-in types
-        if (isBuiltInType(typeName) || importedClasses.contains(typeName) || typeName.equals(table.getClassName())) {
-            System.out.println("Type recognized: " + fullTypeName);
-        } else {
-            System.out.println("Type unrecognized: " + fullTypeName);
+        // Utilizing isTypeValid to check if the type is recognized
+        if (!isTypeValid(typeName, table)) {
             addReport(Report.newError(
                     Stage.SEMANTIC,
                     NodeUtils.getLine(type),
@@ -218,6 +226,8 @@ public class Analysispasses extends AnalysisVisitor {
                     "Type '" + fullTypeName + "' is not defined or imported.",
                     null
             ));
+        } else {
+            System.out.println("Type recognized: " + fullTypeName);
         }
         return null;
     }
@@ -230,35 +240,6 @@ public class Analysispasses extends AnalysisVisitor {
 
 
 
-    private Void visitBinaryOp(JmmNode binaryOp, SymbolTable table) {
-        System.out.println("Visiting binary operation: " + binaryOp); // Debug statement
-        String operator = binaryOp.get("op");
-        List<JmmNode> children = binaryOp.getChildren();
-        if (children.size() == 2) {
-            String leftType = resolveType(children.get(0), table);
-            String rightType = resolveType(children.get(1), table);
-            if (operator.equals("+") && (leftType.equals("int[]") && rightType.equals("int") || leftType.equals("int") && rightType.equals("int[]"))) {
-                addReport(Report.newError(
-                        Stage.SEMANTIC,
-                        NodeUtils.getLine(binaryOp),
-                        NodeUtils.getColumn(binaryOp),
-                        "Cannot add an array to an integer.",
-                        null
-                ));
-            }
-            // Check for invalid operations like multiplying a boolean with an integer
-            if (operator.equals("*") && ("boolean".equals(leftType) && "int".equals(rightType) || "int".equals(leftType) && "boolean".equals(rightType))) {
-                addReport(Report.newError(
-                        Stage.SEMANTIC,
-                        NodeUtils.getLine(binaryOp),
-                        NodeUtils.getColumn(binaryOp),
-                        "Cannot multiply boolean with integer.",
-                        null
-                ));
-            }
-        }
-        return null;
-    }
 
     private Void visitBinaryExpr(JmmNode binaryExpr, SymbolTable table) {
         System.out.println("Visiting binary expression: " + binaryExpr); // Debug statement
@@ -305,43 +286,57 @@ public class Analysispasses extends AnalysisVisitor {
 
     private String resolveType(JmmNode node, SymbolTable table) {
         String resolvedType = "unknown";  // Default case for unknown or unhandled types
+        System.out.println("Kind: " + node.getKind());
         switch (node.getKind()) {
             case "Type":
-                String baseType = node.get("name");
+                String typeName = node.get("name");
                 boolean isArray = node.getOptional("isArray").map(Boolean::parseBoolean).orElse(false);
-                resolvedType = isArray ? baseType + "[]" : baseType;
+                typeName += isArray ? "[]" : "";
+                if (isTypeValid(typeName, table)) return typeName;
                 break;
-            case "IntegerLiteral":
-                resolvedType = "int";  // Assuming literals have a 'type' attribute
+            case "MethodCallExpr":
+                resolvedType = "int";
                 break;
-            case "BooleanLiteral":
-                resolvedType = "boolean";  // Assuming literals have a 'type' attribute
+            case "Boolean":
+                resolvedType = "boolean";
                 break;
             case "VarRefExpr":
                 String varName = node.get("name");
-                resolvedType = findVariableType(varName, node, table);
-                break;
-            case "NewArrayInt":
-                resolvedType = "int[]";  // Explicitly set the type for new integer arrays
-                break;
-            case "NewObject":
-                if (node.hasAttribute("name")) {
-                    resolvedType = node.get("name");
+                // Check if the variable type is already remembered
+                if (variableTypes.containsKey(varName)) {
+                    resolvedType = variableTypes.get(varName);
                 } else {
-                    System.err.println("NewObject node does not contain 'name' attribute.");
-                    resolvedType = "unknown";
+                    resolvedType = findVariableType(varName, node, table);
                 }
                 break;
-            case "MethodCallExpr":
-                String methodName = node.get("methodName");
-                var returnType = table.getReturnType(methodName);
-                resolvedType = returnType != null ? returnType.getName() : "unknown";
+            case "NewObject":
+                System.out.println("Attributes of NewObject node: " + node.getAttributes());
+                if (node.hasAttribute("className")) {
+                    resolvedType = node.get("className");
+                    rememberNewObjectType(node, resolvedType);
+                } else {
+                    System.err.println("NewObject node does not have a 'className' attribute.");
+                }
                 break;
             default:
-                resolvedType = "unknown";  // Default case for unknown or unhandled types
+                resolvedType = "unknown";
         }
-        System.out.println("Resolving type for node: " + node.getKind() + ", resolved type: " + resolvedType);
         return resolvedType;
+    }
+
+
+
+    private void rememberNewObjectType(JmmNode newNode, String typeName) {
+        JmmNode parent = newNode.getParent();
+        if (parent != null && parent.getKind().equals("Assign") && parent.getChildren().size() > 0) {
+            JmmNode lhs = parent.getChildren().get(0);  // Left-hand side of the assignment
+            if (lhs.getKind().equals("VarRefExpr")) {
+                String varName = lhs.get("name");
+                // Remember the type of the variable
+                variableTypes.put(varName, typeName);
+                System.out.println("Remembering type: " + varName + " -> " + typeName);
+            }
+        }
     }
 
 
@@ -362,14 +357,22 @@ public class Analysispasses extends AnalysisVisitor {
 
 
 
+
+
     private String findVariableType(String varName, JmmNode contextNode, SymbolTable table) {
+        // First, check if the variable type is already remembered
+        if (variableTypes.containsKey(varName)) {
+            return variableTypes.get(varName);
+        }
+
         String currentMethodSignature = getCurrentMethodSignature(contextNode);
 
         // Check if the method signature is valid and parameters are not null
         var methodParams = table.getParameters(currentMethodSignature);
         if (methodParams == null) {
             System.err.println("Method parameters not found for method: " + currentMethodSignature);
-            return "unknown";
+            // Handle as a class field or imported type
+            return findClassFieldType(varName, table);
         }
 
         // Check if the variable is a local variable in the current method
@@ -405,10 +408,32 @@ public class Analysispasses extends AnalysisVisitor {
             return isArray ? fieldVarType + "[]" : fieldVarType;
         }
 
+        // If variable is not found, return unknown
         System.out.println("Variable not found: " + varName);
-        return "unknown";  // If no type is found, return "unknown"
+        return "unknown";
     }
 
+
+    private String findClassFieldType(String varName, SymbolTable table) {
+        // Check if the variable is a class field
+        var fieldVar = table.getFields().stream()
+                .filter(field -> field.getName().equals(varName))
+                .findFirst();
+        if (fieldVar.isPresent()) {
+            String fieldVarType = fieldVar.get().getType().getName();
+            boolean isArray = fieldVar.get().getType().isArray();
+            System.out.println("Field found: " + varName + ", type: " + (isArray ? fieldVarType + "[]" : fieldVarType));
+            return isArray ? fieldVarType + "[]" : fieldVarType;
+        }
+
+        // If not found, check if it is an imported class type
+        if (importedClasses.contains(varName)) {
+            System.out.println("Imported class type found: " + varName);
+            return varName;
+        }
+
+        return "unknown";
+    }
 
 
 
