@@ -185,6 +185,11 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
                 a = visit(node.getChildren().get(i));
                 code.append(a.getComputation());
             }
+
+            if (node.getChildren().get(i).getKind().equals("VarRefExpr")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
         }
 
 
@@ -203,7 +208,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
         for (int i = 1; i < node.getChildren().size(); i++) {
 
-            if (node.getChildren().get(i).getKind().equals(METHOD_CALL_EXPR.toString()) || node.getChildren().get(i).getKind().equals(LENGTH.toString()) || node.getChildren().get(i).getKind().equals(BINARY_EXPR.toString()) || node.getChildren().get(i).getKind().equals(NEW_OBJECT.toString()) || node.getChildren().get(i).getKind().equals(NEW_ARRAY_INT.toString()) || node.getChildren().get(i).getKind().equals(NOT.toString()) || node.getChildren().get(i).getKind().equals(ARRAY.toString()) || node.getChildren().get(i).getKind().equals(ARRAY_INIT.toString())) {
+            if (node.getChildren().get(i).getKind().equals(METHOD_CALL_EXPR.toString()) || node.getChildren().get(i).getKind().equals(VAR_REF_EXPR.toString()) || node.getChildren().get(i).getKind().equals(LENGTH.toString()) || node.getChildren().get(i).getKind().equals(BINARY_EXPR.toString()) || node.getChildren().get(i).getKind().equals(NEW_OBJECT.toString()) || node.getChildren().get(i).getKind().equals(NEW_ARRAY_INT.toString()) || node.getChildren().get(i).getKind().equals(NOT.toString()) || node.getChildren().get(i).getKind().equals(ARRAY.toString()) || node.getChildren().get(i).getKind().equals(ARRAY_INIT.toString())) {
                 args.add("," + a.getCode());
             }
 
@@ -276,15 +281,68 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         var intType = TypeUtils.getExprType(node, table);
         String ret = OptUtils.toOllirType(intType);
         StringBuilder code = new StringBuilder();
+        String computation = OptUtils.getTemp() + ret;
+        var a = OllirExprResult.EMPTY;
 
+        for (int i = 1; i < node.getChildren().size(); i++) {
+
+            if (node.getChildren().get(i).getKind().equals(METHOD_CALL_EXPR.toString())) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("Length")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("BinaryExpr")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("NewObject")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("NewArrayInt")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("Not")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("Array")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("ArrayInit")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("VarRefExpr")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+        }
+
+        code.append(computation).append(SPACE).append(ASSIGN).append(ret).append(SPACE);
         code.append(node.getChild(0).get("name"));
         code.append("[");
         var pos = visit(node.getChild(1)).getCode();
         code.append(pos);
         code.append("]");
         code.append(ret);
+        code.append(END_STMT);
 
-        return new OllirExprResult(code.toString());
+        return new OllirExprResult(computation, code.toString());
     }
 
     private OllirExprResult visitNewArrayInt(JmmNode node, Void unused) {
