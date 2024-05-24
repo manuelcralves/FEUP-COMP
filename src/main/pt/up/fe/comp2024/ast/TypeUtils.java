@@ -35,6 +35,7 @@ public class TypeUtils {
             case NEW_OBJECT -> new Type(table.getClassName(), false);
             case NEW_ARRAY_INT -> new Type("int", true);
             case ARRAY_INIT -> new Type("int", true);
+            case LENGTH -> new Type("int", false);
 
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
         };

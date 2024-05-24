@@ -33,13 +33,14 @@ public enum Kind {
     RETURN,
     NEW_ARRAY,
     ARRAY,
+    LENGTH,
     BINARY_EXPR,
     INTEGER_LITERAL,
     VAR_REF_EXPR;
 
 
     private static final Set<Kind> EXPRESSIONS = Set.of(BINARY_EXPR, INTEGER_LITERAL, VAR_REF_EXPR);
-    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT, EXPRESSION, ASSiGN_ARRAY);
+    private static final Set<Kind> STATEMENTS = Set.of(ASSIGN_STMT, RETURN_STMT, EXPRESSION, ASSiGN_ARRAY, LENGTH);
     private final String name;
 
     private Kind(String name) {

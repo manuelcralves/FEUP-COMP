@@ -39,6 +39,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         addVisit(NOT, this::visitNot);
         addVisit(ARRAY, this::visitArray);
         addVisit(ARRAY_INIT, this::ArrayInit);
+        addVisit(LENGTH, this::visitLenght);
         setDefaultVisit(this::defaultVisit);
     }
 
@@ -131,6 +132,11 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
                 a = visit(node.getChildren().get(i));
                 code.append(a.getComputation());
             }
+
+            if (node.getChildren().get(i).getKind().equals("Length")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
         }
 
 
@@ -149,7 +155,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
         for (int i = 1; i < node.getChildren().size(); i++) {
 
-            if (node.getChildren().get(i).getKind().equals(METHOD_CALL_EXPR.toString())) {
+            if (node.getChildren().get(i).getKind().equals(METHOD_CALL_EXPR.toString()) || node.getChildren().get(i).getKind().equals(LENGTH.toString())) {
                 args.add("," + a.getCode());
             }
 
@@ -280,6 +286,25 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
             computation.append(i + ".i32].i32 :=.i32").append(SPACE).append(visit(node.getChild(i)).getCode());
             computation.append(END_STMT);
         }
+
+        return new OllirExprResult(code, computation);
+    }
+
+    private OllirExprResult visitLenght(JmmNode node, Void unused) {
+
+        StringBuilder computation = new StringBuilder();
+        var resOllirType = TypeUtils.getExprType(node, table);
+        String type = OptUtils.toOllirType(resOllirType);
+        String code = OptUtils.getTemp() + type;
+
+        computation.append(code);
+        computation.append(SPACE);
+        computation.append(ASSIGN);
+        computation.append(type).append(SPACE);
+        computation.append("arraylength(").append(visit(node.getChild(0)).getCode());
+        computation.append(")").append(type);
+        computation.append(END_STMT);
+
 
         return new OllirExprResult(code, computation);
     }
