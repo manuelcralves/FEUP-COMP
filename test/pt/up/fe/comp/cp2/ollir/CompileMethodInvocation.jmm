@@ -16,3 +16,4 @@ class CompileMethodInvocation {
         return 0;
     }
 }
+
