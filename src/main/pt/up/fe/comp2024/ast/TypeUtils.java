@@ -105,7 +105,7 @@ public class TypeUtils {
     }
     private static Type getNewObjectType(JmmNode newObjectExpr, SymbolTable table) {
         if (newObjectExpr.hasAttribute("className")) {
-            return new Type(newObjectExpr.get("className"), false);
+            return new Type(table.getClassName(), false);
         } else {
             System.err.println("NewObject node does not have a 'className' attribute.");
             return new Type("unknown", false);
