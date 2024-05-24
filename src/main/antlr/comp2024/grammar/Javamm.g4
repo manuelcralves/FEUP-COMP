@@ -114,7 +114,7 @@ expr
     | expr DOT methodName=ID LPAREN ( expr ( COLON expr )* )? RPAREN #MethodCallExpr
     | LSQUARE (expr (COLON expr)*)? RSQUARE #ArrayInit
     | NEW INT LSQUARE expr RSQUARE #NewArrayInt
-    | NEW ID LPAREN RPAREN #NewObject
+    | NEW className=ID LPAREN RPAREN #NewObject
     | expr op=(MUL|DIV) expr #BinaryExpr
     | expr op=(ADD|SUB) expr #BinaryExpr
     | expr op=(LT|LTE|MT|MTE) expr #BinaryExpr
