@@ -4,7 +4,6 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp2024.ast.Kind;
-import pt.up.fe.comp2024.ast.NodeUtils;
 import pt.up.fe.specs.util.SpecsCheck;
 
 import java.util.*;
@@ -47,7 +46,7 @@ public class JmmSymbolTableBuilder {
             } else {
                 for (JmmNode paramNode : method.getChildren("Parameters")) {
                     String type = paramNode.getChild(0).get("name");
-                    boolean isArray = NodeUtils.getBooleanAttribute(paramNode, "isArray", "true");
+                    boolean isArray = paramNode.getOptional("isArray").orElse("false").equals("true");
                     String parameter = paramNode.get("name");
                     paramsList.add(new Symbol(new Type(type, isArray), parameter));
                 }
