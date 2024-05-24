@@ -73,7 +73,7 @@ varDecl
     ;
 
 type locals [boolean isArray = false]
-    : name=INT (LSQUARE RSQUARE {$isArray = true;})?
+    : name=INT (LSQUARE RSQUARE {$isArray = true;})
     | name=INT DOTS
     | name=BOOL
     | name=INT
