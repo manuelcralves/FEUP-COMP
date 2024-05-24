@@ -31,7 +31,9 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
     private final String NL = "\n";
     private final String L_BRACKET = " {\n";
     private final String R_BRACKET = "}\n";
+    private Integer INTI = -1;
 
+    private Integer INTW = -1;
 
     private final SymbolTable table;
 
@@ -57,6 +59,9 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
         addVisit(ASSiGN_ARRAY, this::visitAssignArray);
         addVisit("Main", this::visitMain);
         addVisit("Assign", this::visitAssignStmt);
+        addVisit(IF_ELSE, this::visitIfElse);
+        addVisit(BLOCK, this::visitBlock);
+        addVisit(WHILE, this::visitWhile);
 
         setDefaultVisit(this::defaultVisit);
     }
@@ -302,7 +307,9 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
     private String visitExprStmt(JmmNode node, Void unused) {
         OllirExprResult a = exprVisitor.visit(node.getJmmChild(0));
-        return a.getComputation() + NL + a.getCode();
+        StringBuilder code = new StringBuilder();
+        code.append(a.getComputation());
+        return code.toString();
     }
 
     private String visitMain(JmmNode node, Void unused) {
@@ -364,6 +371,75 @@ public class OllirGeneratorVisitor extends AJmmVisitor<Void, String> {
 
         code.append(END_STMT);
 
+        return code.toString();
+    }
+
+    private String visitBlock(JmmNode node, Void unused) {
+
+        StringBuilder code = new StringBuilder();
+
+        code.append(visit(node.getChild(0)));
+        return code.toString();
+
+    }
+
+    private String visitIfElse(JmmNode node, Void unused) {
+
+        StringBuilder code = new StringBuilder();
+        var lhs = exprVisitor.visit(node.getJmmChild(0));
+        Integer i = INTI;
+        this.INTI = i++;
+
+        if (lhs.getComputation().isEmpty()) {
+            code.append("if(").append(lhs.getCode()).append(")").append(SPACE).append("goto").append(SPACE).append("if_").append(i);
+        }
+
+        else {
+            code.append("if(").append(lhs.getComputation()).append(")").append(SPACE).append("goto").append(SPACE).append("if_").append(i);
+        }
+
+        code.append(END_STMT);
+        code.append(visit(node.getJmmChild(2)));
+        code.append("goto endif_").append(i);
+        code.append(END_STMT);
+        code.append("if_").append(i);
+        code.append(":").append(NL);
+        code.append(visit(node.getJmmChild(1)));
+        code.append("endif_").append(i).append(":").append(NL);
+
+        return code.toString();
+    }
+
+    private String visitWhile(JmmNode node, Void unused) {
+        StringBuilder code = new StringBuilder();
+        var lhs = exprVisitor.visit(node.getJmmChild(0));
+        Integer w = INTW;
+        this.INTW = w++;
+
+        if (lhs.getComputation().isEmpty()) {
+            code.append("if(").append(lhs.getCode()).append(")").append(SPACE).append("goto").append(SPACE).append("whilebody_").append(w);
+        }
+
+        else {
+            code.append("if(").append(lhs.getComputation()).append(")").append(SPACE).append("goto").append(SPACE).append("whilebody_").append(w);
+        }
+
+        code.append(END_STMT);
+        code.append("goto endwhile_").append(w);
+        code.append(END_STMT);
+        code.append("whilebody_").append(w).append(":");
+        code.append(NL);
+        code.append(visit(node.getJmmChild(1)));
+
+        if (lhs.getComputation().isEmpty()) {
+            code.append("if(").append(lhs.getCode()).append(")").append(SPACE).append("goto").append(SPACE).append("whilebody_").append(w);
+        }
+
+        else {
+            code.append("if(").append(lhs.getComputation()).append(")").append(SPACE).append("goto").append(SPACE).append("whilebody_").append(w);
+        }
+
+        code.append(END_STMT);
         return code.toString();
     }
 

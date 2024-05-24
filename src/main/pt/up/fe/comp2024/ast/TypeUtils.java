@@ -35,6 +35,7 @@ public class TypeUtils {
             case NEW_OBJECT -> getNewObjectType(expr, table);
             case NEW_ARRAY_INT -> new Type("int", true);
             case ARRAY_INIT -> new Type("int", true);
+            case LENGTH -> new Type("int", false);
 
             default -> throw new UnsupportedOperationException("Can't compute type for expression kind '" + kind + "'");
         };
@@ -70,15 +71,30 @@ public class TypeUtils {
         String methodName = varRefExpr.getAncestor(METHOD_DECL).map(method -> method.get("name")).orElseThrow();
         Type retType = table.getReturnType(methodName);
 
-        for (int i = 0; i<table.getParameters(methodName).size(); i++) {
+        if (varRefExpr.getKind().equals("Not")) {
+            return new Type("boolean", false);
+        }
 
-            if(table.getParameters(methodName).get(i).getName().equals(varRefExpr.get("name"))) {
-                retType = table.getParameters(methodName).get(i).getType();
+        for (var locals : table.getLocalVariables(methodName)) {
+            if (locals.getName().equals(varRefExpr.get("name"))) {
+                retType = locals.getType();
             }
         }
 
-        if (varRefExpr.getKind().equals(NOT)) {
-            return new Type("boolean", false);
+        for (var params : table.getParameters(methodName)) {
+            if (params.getName().equals(varRefExpr.get("name"))) {
+                retType = params.getType();
+            }
+        }
+
+        for (var fields : table.getFields()) {
+            if (fields.getName().equals(varRefExpr.get("name"))) {
+                retType = fields.getType();
+            }
+        }
+
+        if (retType.isArray()) {
+            return new Type("int", true);
         }
 
         if (retType.getName().equals("boolean")) {
