@@ -20,6 +20,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
     private static final String SPACE = " ";
     private static final String ASSIGN = ":=";
     private final String END_STMT = ";\n";
+    private final String NL = "\n";
 
     private final SymbolTable table;
 
@@ -73,23 +74,40 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         String resOllirType = OptUtils.toOllirType(resType);
         String code = OptUtils.getTemp() + resOllirType;
 
-        if (!(node.getParent().getKind().equals("IfElse")) && !(node.getParent().getKind().equals("While"))) {
-            computation.append(code).append(SPACE)
-                    .append(ASSIGN).append(resOllirType).append(SPACE);
+        if (node.get("op").equals("&&") || node.get("op").equals("||")) {
+
+            computation.append("if(").append(lhs.getCode()).append(SPACE).append(node.get("op")).append(resOllirType).append(SPACE).append(rhs.getCode()).append(")").append(SPACE).append("goto").append(SPACE).append("true_0");
+            computation.append(END_STMT);
+            computation.append(code).append(SPACE).append(ASSIGN).append(resOllirType).append(SPACE);
+            computation.append("0").append(resOllirType);
+            computation.append(END_STMT);
+            computation.append("goto end_0");
+            computation.append(END_STMT);
+            computation.append("if_0");
+            computation.append(":").append(NL);
+            computation.append(code).append(SPACE).append(ASSIGN).append(resOllirType).append(SPACE);
+            computation.append("1").append(resOllirType);
+            computation.append(END_STMT);
+            computation.append("end_0").append(":").append(NL);
+
         }
 
-        computation.append(lhs.getCode()).append(SPACE);
-
-        Type type = TypeUtils.getExprType(node, table);
-
-        if (!(node.getParent().getKind().equals("IfElse")) && !(node.getParent().getKind().equals("While"))) {
-            computation.append(node.get("op")).append(OptUtils.toOllirType(type)).append(SPACE)
-                    .append(rhs.getCode()).append(END_STMT);
+        else if (!(node.getParent().getKind().equals("IfElse")) && !(node.getParent().getKind().equals("While"))) {
+            computation.append(code).append(SPACE).append(ASSIGN).append(resOllirType).append(SPACE);
         }
 
-        else {
-            computation.append(node.get("op")).append(OptUtils.toOllirType(type)).append(SPACE)
-                    .append(rhs.getCode());
+        if (!(node.get("op").equals("&&") || node.get("op").equals("||"))) {
+            computation.append(lhs.getCode()).append(SPACE);
+
+            Type type = TypeUtils.getExprType(node, table);
+
+            if (!(node.getParent().getKind().equals("IfElse")) && !(node.getParent().getKind().equals("While"))) {
+                computation.append(node.get("op")).append(OptUtils.toOllirType(type)).append(SPACE).append(rhs.getCode()).append(END_STMT);
+            }
+
+            else {
+                computation.append(node.get("op")).append(OptUtils.toOllirType(type)).append(SPACE).append(rhs.getCode());
+            }
         }
 
         return new OllirExprResult(code, computation);
@@ -137,6 +155,36 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
                 a = visit(node.getChildren().get(i));
                 code.append(a.getComputation());
             }
+
+            if (node.getChildren().get(i).getKind().equals("BinaryExpr")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("NewObject")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("NewArrayInt")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("Not")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("Array")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
+
+            if (node.getChildren().get(i).getKind().equals("ArrayInit")) {
+                a = visit(node.getChildren().get(i));
+                code.append(a.getComputation());
+            }
         }
 
 
@@ -155,7 +203,7 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
 
         for (int i = 1; i < node.getChildren().size(); i++) {
 
-            if (node.getChildren().get(i).getKind().equals(METHOD_CALL_EXPR.toString()) || node.getChildren().get(i).getKind().equals(LENGTH.toString())) {
+            if (node.getChildren().get(i).getKind().equals(METHOD_CALL_EXPR.toString()) || node.getChildren().get(i).getKind().equals(LENGTH.toString()) || node.getChildren().get(i).getKind().equals(BINARY_EXPR.toString()) || node.getChildren().get(i).getKind().equals(NEW_OBJECT.toString()) || node.getChildren().get(i).getKind().equals(NEW_ARRAY_INT.toString()) || node.getChildren().get(i).getKind().equals(NOT.toString()) || node.getChildren().get(i).getKind().equals(ARRAY.toString()) || node.getChildren().get(i).getKind().equals(ARRAY_INIT.toString())) {
                 args.add("," + a.getCode());
             }
 
@@ -170,8 +218,6 @@ public class OllirExprGeneratorVisitor extends PreorderJmmVisitor<Void, OllirExp
         code.append("(");
 
         if (classNode.getOptional("name").isPresent()) {
-            //code.append(classNode.getOptional("name").get());
-            //code.append(vis.getCode());
             String s = !table.getMethods().contains(node.get("methodName")) ? (classNode.getOptional("name").get()) : (vis.getCode());
             code.append(s);
         }
